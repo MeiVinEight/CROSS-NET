@@ -1,0 +1,47 @@
+buildscript {
+    repositories {
+        maven { url 'https://mirrors.cloud.tencent.com/gradle/'}
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
+        maven { url 'https://maven.aliyun.com/nexus/content/repositories/jcenter' }
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://www.jitpack.io' }
+        mavenCentral()
+        gradlePluginPortal()
+        google()
+    }
+}
+
+
+plugins {
+    id 'java'
+}
+
+group = "org.mve"
+version = "1.0.0"
+
+repositories {
+    maven { url 'https://mirrors.cloud.tencent.com/gradle/'}
+    maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
+    maven { url 'https://maven.aliyun.com/nexus/content/repositories/jcenter' }
+    maven { url 'https://maven.aliyun.com/repository/jcenter' }
+    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'https://www.jitpack.io' }
+    mavenCentral()
+    gradlePluginPortal()
+    google()
+}
+
+dependencies {
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+    implementation group: 'com.github.MeiVinEight', name: 'ReflectionFX', version: '-SNAPSHOT'
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    // implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.16'
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+    // implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.16'
+
+}

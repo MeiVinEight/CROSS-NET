@@ -1,0 +1,211 @@
+package org.mve.cross;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.mve.cross.pack.Datapack;
+import org.mve.cross.pack.Handshake;
+import org.mve.invoke.common.JavaVM;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+
+public class NetworkManager
+{
+	private static final String KEY_SERVER_IP = "server-ip";
+	private static final String KEY_SERVER_PORT = "server-port";
+	private static final String KEY_MAPPING = "mapping";
+	private static final String KEY_MAPPING_LISTEN_PORT = "listen-port";
+	private static final String KEY_MAPPING_LOCALE_PORT = "locale-port";
+	private static final Map<Integer, Integer> MAPPING = new HashMap<>();
+	public static final String SERVER_IP;
+	public static final int SERVER_PORT;
+	public static final int NETWORK_STAT_READY = 0;
+	public static final int NETWORK_STAT_RUNNING = 1;
+	public static final int NETWORK_STAT_STOPPED = 2;
+	public final int type;
+	// Server listen connections from frp client
+	private final ServerSocket remote;
+	// Communication connect between FRP server and client
+	public ConnectionManager communication;
+	// Server listen connections from all users
+	public ServerSocket[][] server = new ServerSocket[256][];
+	private int status = NetworkManager.NETWORK_STAT_READY;
+	public Object[][][][] connection = new Object[256][][][];
+
+	public NetworkManager(int type)
+	{
+		this.type = type;
+		this.status = NETWORK_STAT_RUNNING;
+		try
+		{
+			if (this.type == CrossNet.SIDE_SERVER)
+			{
+				// Create remote listen server
+				this.remote = new ServerSocket(SERVER_PORT);
+				// Create a connection with frp client
+				while (this.communication == null)
+				{
+					CrossNet.LOG.info("Waiting communication at " + SERVER_PORT);
+					this.communication = new ConnectionManager(this, this.remote.accept());
+					CrossNet.LOG.info("Handshake with " + this.communication.socket.getRemoteSocketAddress());
+					try
+					{
+						Datapack datapack = this.communication.receive();
+						if (!(datapack instanceof Handshake))
+						{
+							this.communication.close();
+							this.communication = null;
+						}
+						datapack.accept(this.communication);
+						if (this.communication.socket.isClosed()) this.communication = null;
+					}
+					catch (Throwable t)
+					{
+						CrossNet.LOG.log(Level.WARNING, null, t);
+					}
+				}
+				new Thread(new Communication(communication)).start();
+			}
+			else // CrossNet.SIDE_CLIENT
+			{
+				this.remote = null;
+				InetAddress addr = InetAddress.getByName(SERVER_IP);
+				this.communication = new ConnectionManager(this, new Socket(addr, SERVER_PORT));
+				Handshake handshake = new Handshake();
+				this.communication.send(handshake);
+				new Thread(new Communication(communication)).start();
+				for (Map.Entry<Integer, Integer> entry : NetworkManager.MAPPING.entrySet())
+				{
+					int listenPort = entry.getKey();
+				}
+			}
+		}
+		catch (Throwable t)
+		{
+			this.status = NetworkManager.NETWORK_STAT_STOPPED;
+			CrossNet.LOG.log(Level.SEVERE, null, t);
+			JavaVM.exception(t);
+			throw new RuntimeException(t);
+		}
+	}
+
+	public int status()
+	{
+		return this.status;
+	}
+
+	public void close()
+	{
+		this.status = NetworkManager.NETWORK_STAT_STOPPED;
+		try
+		{
+			this.communication.close();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace(System.out);
+		}
+
+		if (this.remote != null)
+		{
+			try
+			{
+				this.remote.close();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace(System.out);
+			}
+		}
+
+		for (ServerSocket[] s2 : this.server)
+		{
+			if (s2 != null)
+			{
+				for (ServerSocket server : s2)
+				{
+					try
+					{
+						if (server != null)
+						{
+							server.close();
+						}
+					}
+					catch (IOException e)
+					{
+						e.printStackTrace(System.out);
+					}
+				}
+			}
+		}
+	}
+
+	public static int mapping(int port)
+	{
+		Integer local = MAPPING.get(port);
+		if (local == null) return 0;
+		return local;
+	}
+
+	public Object connection(int rp, int lp)
+	{
+		int idx0 = (rp >> 8) & 0xFF;
+		int idx1 = (rp >> 0) & 0xFF;
+		int idx2 = (lp >> 8) & 0xFF;
+		int idx3 = (lp >> 0) & 0xFF;
+		Object[][][][] s0 = this.connection;
+		if (s0[idx0] == null) s0[idx0] = new Object[256][][];
+		Object[][][] s1 = s0[idx0];
+		if (s1[idx1] == null) s1[idx1] = new Object[256][];
+		Object[][] s2 = s1[idx1];
+		if (s2[idx2] == null) s2[idx2] = new Object[256];
+		Object[] s3 = s2[idx2];
+		return s3[idx3];
+	}
+
+	public void connection(int rp, int lp, Object obj)
+	{
+		int idx0 = (rp >> 8) & 0xFF;
+		int idx1 = (rp >> 0) & 0xFF;
+		int idx2 = (lp >> 8) & 0xFF;
+		int idx3 = (lp >> 0) & 0xFF;
+		Object[][][][] s0 = this.connection;
+		if (s0[idx0] == null) s0[idx0] = new Object[256][][];
+		Object[][][] s1 = s0[idx0];
+		if (s1[idx1] == null) s1[idx1] = new Object[256][];
+		Object[][] s2 = s1[idx1];
+		if (s2[idx2] == null) s2[idx2] = new Object[256];
+		Object[] s3 = s2[idx2];
+		s3[idx3] = obj;
+	}
+
+	static
+	{
+		try
+		{
+			JsonArray array = CrossNet.PROPERTIES.get(KEY_MAPPING).getAsJsonArray();
+			for (int i = 0; i < array.size(); i++)
+			{
+				JsonObject object = array.get(i).getAsJsonObject();
+				int listen = Integer.parseInt(object.get(KEY_MAPPING_LISTEN_PORT).getAsString());
+				int locale = Integer.parseInt(object.get(KEY_MAPPING_LOCALE_PORT).getAsString());
+				MAPPING.put(listen, locale);
+				CrossNet.LOG.config("Mapping " + listen + "(S) - " + locale + "(C)");
+			}
+			SERVER_IP = CrossNet.PROPERTIES.get(KEY_SERVER_IP).getAsString();
+			SERVER_PORT = CrossNet.PROPERTIES.get(KEY_SERVER_PORT).getAsInt();
+		}
+		catch (Throwable e)
+		{
+			CrossNet.LOG.log(Level.SEVERE, "Couldn't read properties file");
+			CrossNet.LOG.log(Level.SEVERE, null, e);
+			JavaVM.exception(e);
+			throw new RuntimeException(e);
+		}
+	}
+}
