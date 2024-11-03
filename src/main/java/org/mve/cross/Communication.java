@@ -2,6 +2,7 @@ package org.mve.cross;
 
 import org.mve.cross.pack.Datapack;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.logging.Level;
 
@@ -26,11 +27,14 @@ public class Communication implements Runnable
 				datapack.accept(this.connection);
 			}
 		}
+		catch (EOFException eof)
+		{
+			CrossNet.LOG.warning("Communication " + this.connection.socket.getRemoteSocketAddress() + " closed");
+		}
 		catch (IOException e)
 		{
 			CrossNet.LOG.log(Level.SEVERE, null, e);
-			CrossNet.LOG.severe("Close server");
-			this.connection.network.close();
 		}
+		this.connection.network.close();
 	}
 }

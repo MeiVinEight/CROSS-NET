@@ -25,8 +25,9 @@ public class NetworkManager
 	public static final String SERVER_IP;
 	public static final int SERVER_PORT;
 	public static final int NETWORK_STAT_READY = 0;
-	public static final int NETWORK_STAT_RUNNING = 1;
-	public static final int NETWORK_STAT_STOPPED = 2;
+	public static final int NETWORK_STAT_COMMUNICATION = 1;
+	public static final int NETWORK_STAT_RUNNING = 2;
+	public static final int NETWORK_STAT_STOPPED = 3;
 	public final int type;
 	// Server listen connections from frp client
 	private final ServerSocket remote;
@@ -40,7 +41,7 @@ public class NetworkManager
 	public NetworkManager(int type)
 	{
 		this.type = type;
-		this.status = NETWORK_STAT_RUNNING;
+		this.status = NETWORK_STAT_COMMUNICATION;
 		try
 		{
 			if (this.type == CrossNet.SIDE_SERVER)
@@ -55,6 +56,8 @@ public class NetworkManager
 					CrossNet.LOG.info("Handshake with " + this.communication.socket.getRemoteSocketAddress());
 					try
 					{
+						Handshake handshake = new Handshake(); // Communication handshake
+						this.communication.send(handshake);
 						Datapack datapack = this.communication.receive();
 						if (!(datapack instanceof Handshake))
 						{
@@ -69,15 +72,47 @@ public class NetworkManager
 						CrossNet.LOG.log(Level.WARNING, null, t);
 					}
 				}
+				this.status = NETWORK_STAT_RUNNING;
 				new Thread(new Communication(communication)).start();
 			}
 			else // CrossNet.SIDE_CLIENT
 			{
 				this.remote = null;
 				InetAddress addr = InetAddress.getByName(SERVER_IP);
+				CrossNet.LOG.info("Communication to " + addr + ":" + SERVER_PORT);
 				this.communication = new ConnectionManager(this, new Socket(addr, SERVER_PORT));
-				Handshake handshake = new Handshake();
-				this.communication.send(handshake);
+				CrossNet.LOG.info("Communication handshake");
+				try
+				{
+					Handshake handshake = new Handshake();
+					this.communication.send(handshake);
+					Datapack datapack = this.communication.receive();
+					if (!(datapack instanceof Handshake))
+					{
+						this.communication.close();
+						this.communication = null;
+					}
+					else
+					{
+						datapack.accept(this.communication);
+						if (this.communication.socket.isClosed())
+						{
+							this.communication = null;
+						}
+					}
+					if (this.communication == null)
+					{
+						throw new IOException("Connection refused");
+					}
+				}
+				catch (IOException e)
+				{
+					CrossNet.LOG.severe("Handshake failed");
+					CrossNet.LOG.log(Level.SEVERE, null, e);
+					this.close();
+					return;
+				}
+				this.status = NETWORK_STAT_RUNNING;
 				new Thread(new Communication(communication)).start();
 				for (Map.Entry<Integer, Integer> entry : NetworkManager.MAPPING.entrySet())
 				{
@@ -101,20 +136,26 @@ public class NetworkManager
 
 	public void close()
 	{
+		CrossNet.LOG.warning("CLOSE");
 		this.status = NetworkManager.NETWORK_STAT_STOPPED;
-		try
+		if (this.communication != null)
 		{
-			this.communication.close();
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace(System.out);
+			try
+			{
+				CrossNet.LOG.info("Close comminucation");
+				this.communication.close();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace(System.out);
+			}
 		}
 
 		if (this.remote != null)
 		{
 			try
 			{
+				CrossNet.LOG.info("Close proxy server");
 				this.remote.close();
 			}
 			catch (IOException e)
@@ -133,6 +174,7 @@ public class NetworkManager
 					{
 						if (server != null)
 						{
+							CrossNet.LOG.info("Close server at " + server.getLocalPort());
 							server.close();
 						}
 					}

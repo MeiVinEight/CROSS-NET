@@ -2,6 +2,7 @@ package org.mve.cross.pack;
 
 import org.mve.cross.ConnectionManager;
 import org.mve.cross.CrossNet;
+import org.mve.cross.NetworkManager;
 import org.mve.cross.Serialization;
 import org.mve.cross.TransferManager;
 
@@ -10,7 +11,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -48,13 +48,13 @@ public class Handshake extends Datapack
 		}
 		// TODO Next generation
 		InetSocketAddress addr = (InetSocketAddress) conn.socket.getRemoteSocketAddress();
-		if (listen == 0) // Communication connection
+		if (conn.network.status() == NetworkManager.NETWORK_STAT_COMMUNICATION)
 		{
 			String info = "Communication connection from " + addr.getAddress().getHostAddress() + ":" + addr.getPort()
 				+ " at " + conn.socket.getLocalPort();
 			CrossNet.LOG.info(info);
 		}
-		else // Transfer connection
+		else
 		{
 			// TODO Transfer
 			CrossNet.LOG.severe("Transfer connection from " + addr + " at " + this.listen);
@@ -89,7 +89,7 @@ public class Handshake extends Datapack
 	public void write(OutputStream out) throws IOException
 	{
 		Serialization.W8(out, this.most);
-		Serialization.W8(out, this.least + 1);
+		Serialization.W8(out, this.least);
 		Serialization.W2(out, this.listen);
 	}
 
