@@ -2,6 +2,7 @@ package org.mve.cross;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.mve.cross.pack.Connection;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 import org.mve.invoke.common.JavaVM;
@@ -30,11 +31,11 @@ public class NetworkManager
 	public static final int NETWORK_STAT_STOPPED = 3;
 	public final int type;
 	// Server listen connections from frp client
-	private final ServerSocket remote;
+	private final TransferMonitor transfer;
 	// Communication connect between FRP server and client
 	public ConnectionManager communication;
 	// Server listen connections from all users
-	public ServerSocket[][] server = new ServerSocket[256][];
+	public ConnectionMonitor[][] server = new ConnectionMonitor[256][];
 	private int status = NetworkManager.NETWORK_STAT_READY;
 	public Object[][][][] connection = new Object[256][][][];
 
@@ -47,12 +48,13 @@ public class NetworkManager
 			if (this.type == CrossNet.SIDE_SERVER)
 			{
 				// Create remote listen server
-				this.remote = new ServerSocket(SERVER_PORT);
+				ServerSocket remote = new ServerSocket(SERVER_PORT);
+				// this.transfer = new ServerSocket(SERVER_PORT);
 				// Create a connection with frp client
 				while (this.communication == null)
 				{
 					CrossNet.LOG.info("Waiting communication at " + SERVER_PORT);
-					this.communication = new ConnectionManager(this, this.remote.accept());
+					this.communication = new ConnectionManager(this, remote.accept());
 					CrossNet.LOG.info("Handshake with " + this.communication.socket.getRemoteSocketAddress());
 					try
 					{
@@ -73,11 +75,13 @@ public class NetworkManager
 					}
 				}
 				this.status = NETWORK_STAT_RUNNING;
+				this.transfer = new TransferMonitor(this, remote);
 				new Thread(new Communication(communication)).start();
+				new Thread(this.transfer).start();
 			}
 			else // CrossNet.SIDE_CLIENT
 			{
-				this.remote = null;
+				this.transfer = null;
 				InetAddress addr = InetAddress.getByName(SERVER_IP);
 				CrossNet.LOG.info("Communication to " + addr + ":" + SERVER_PORT);
 				this.communication = new ConnectionManager(this, new Socket(addr, SERVER_PORT));
@@ -117,6 +121,10 @@ public class NetworkManager
 				for (Map.Entry<Integer, Integer> entry : NetworkManager.MAPPING.entrySet())
 				{
 					int listenPort = entry.getKey();
+					CrossNet.LOG.info("Communication listen " + listenPort);
+					Connection conn = new Connection();
+					conn.LP = (short) listenPort;
+					this.communication.send(conn);
 				}
 			}
 		}
@@ -136,6 +144,8 @@ public class NetworkManager
 
 	public void close()
 	{
+		if (this.status == NETWORK_STAT_STOPPED) return;
+
 		CrossNet.LOG.warning("CLOSE");
 		this.status = NetworkManager.NETWORK_STAT_STOPPED;
 		if (this.communication != null)
@@ -151,36 +161,21 @@ public class NetworkManager
 			}
 		}
 
-		if (this.remote != null)
+		if (this.transfer != null)
 		{
-			try
-			{
-				CrossNet.LOG.info("Close proxy server");
-				this.remote.close();
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace(System.out);
-			}
+			CrossNet.LOG.info("Close proxy server");
+			this.transfer.close();
 		}
 
-		for (ServerSocket[] s2 : this.server)
+		for (ConnectionMonitor[] s2 : this.server)
 		{
 			if (s2 != null)
 			{
-				for (ServerSocket server : s2)
+				for (ConnectionMonitor monitor : s2)
 				{
-					try
+					if (monitor != null)
 					{
-						if (server != null)
-						{
-							CrossNet.LOG.info("Close server at " + server.getLocalPort());
-							server.close();
-						}
-					}
-					catch (IOException e)
-					{
-						e.printStackTrace(System.out);
+						monitor.close();
 					}
 				}
 			}

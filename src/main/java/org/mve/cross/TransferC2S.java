@@ -2,8 +2,8 @@ package org.mve.cross;
 
 import org.mve.cross.pack.Transfer;
 
+import java.io.EOFException;
 import java.io.IOException;
-import java.util.logging.Level;
 
 public class TransferC2S implements Runnable
 {
@@ -20,11 +20,22 @@ public class TransferC2S implements Runnable
 		Thread.currentThread().setName("Transfer");
 		try
 		{
+			{
+				String info = "Transfer " + this.transfer.socket.getRemoteSocketAddress() + " -> " +
+					this.transfer.connection.socket.getRemoteSocketAddress();
+				CrossNet.LOG.info(info);
+			}
 			while (this.transfer.running())
 			{
 				int length = 1024;
 				byte[] payload = new byte[length];
 				int read = this.transfer.socket.getInputStream().read(payload, 0, length);
+				if (read < 0)
+				{
+					// Connection closed
+					CrossNet.LOG.info("Connection " + this.transfer.socket.getRemoteSocketAddress() + " closed");
+					throw new EOFException();
+				}
 				Transfer transfer = new Transfer();
 				transfer.payload = new byte[read];
 				System.arraycopy(payload, 0, transfer.payload, 0, read);
@@ -33,11 +44,7 @@ public class TransferC2S implements Runnable
 		}
 		catch (IOException e)
 		{
-			int rp = this.transfer.RP();
-			int lp = this.transfer.LP();
-			CrossNet.LOG.severe("Transfer " + lp + " - " + rp);
-			CrossNet.LOG.log(Level.SEVERE, null, e);
-			this.transfer.close();
+			this.transfer.exception(e);
 		}
 	}
 }

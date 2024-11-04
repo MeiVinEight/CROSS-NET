@@ -41,22 +41,37 @@ public class TransferManager
 
 	public void close()
 	{
+		CrossNet.LOG.info("Transfer close");
 		this.running = false;
 		try
 		{
+			CrossNet.LOG.info("Closing server connection");
 			this.connection.close();
 		}
 		catch (IOException e)
 		{
-			CrossNet.LOG.log(Level.SEVERE, null, e);
+			CrossNet.LOG.log(Level.WARNING, null, e);
 		}
 		try
 		{
+			CrossNet.LOG.info("Closing client connection");
 			this.socket.close();
 		}
 		catch (IOException e)
 		{
-			CrossNet.LOG.log(Level.SEVERE, null, e);
+			CrossNet.LOG.log(Level.WARNING, null, e);
+		}
+	}
+
+	public void exception(Throwable e)
+	{
+		if (this.running())
+		{
+			int rp = this.RP();
+			int lp = this.LP();
+			CrossNet.LOG.warning("Transfer " + lp + " - " + rp + " closed");
+			CrossNet.LOG.log(Level.WARNING, null, e);
+			this.close();
 		}
 	}
 }

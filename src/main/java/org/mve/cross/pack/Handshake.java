@@ -56,24 +56,34 @@ public class Handshake extends Datapack
 		}
 		else
 		{
-			// TODO Transfer
-			CrossNet.LOG.severe("Transfer connection from " + addr + " at " + this.listen);
-			Socket sock = (Socket) conn.network.connection(0, this.listen);
-			if (sock == null)
+			// TODO Transfer handshake
+			CrossNet.LOG.info("Transfer connection with " + addr + " at " + this.listen);
+			if (conn.network.type == CrossNet.SIDE_SERVER)
 			{
-				CrossNet.LOG.severe("NO CONNECTION AT " + this.listen);
-				try
+				Socket sock = (Socket) conn.network.connection(0, this.listen);
+				if (sock == null)
 				{
-					conn.close();
+					CrossNet.LOG.severe("NO CONNECTION AT " + this.listen);
+					try
+					{
+						conn.close();
+					}
+					catch (IOException e)
+					{
+						CrossNet.LOG.log(Level.SEVERE, null, e);
+					}
+					return;
 				}
-				catch (IOException e)
-				{
-					CrossNet.LOG.log(Level.SEVERE, null, e);
-				}
-				return;
+				conn.network.connection(0, this.listen, null);
+				CrossNet.LOG.info("Create transfer " + sock.getRemoteSocketAddress() + " - " + conn.socket.getRemoteSocketAddress());
+				conn.network.connection(conn.socket.getPort(), this.listen, new TransferManager(conn, sock));
 			}
-			conn.network.connection(0, this.listen, null);
-			conn.network.connection(conn.socket.getPort(), this.listen, new TransferManager(conn, sock));
+			/*
+			else // SIDE_CLIENT
+			{
+				// TODO Nothing to do
+			}
+			*/
 		}
 	}
 

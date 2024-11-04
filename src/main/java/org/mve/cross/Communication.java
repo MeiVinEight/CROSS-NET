@@ -24,7 +24,14 @@ public class Communication implements Runnable
 			while (this.connection.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
 			{
 				Datapack datapack = this.connection.receive();
-				datapack.accept(this.connection);
+				try
+				{
+					datapack.accept(this.connection);
+				}
+				catch (Throwable e)
+				{
+					CrossNet.LOG.log(Level.WARNING, null, e);
+				}
 			}
 		}
 		catch (EOFException eof)

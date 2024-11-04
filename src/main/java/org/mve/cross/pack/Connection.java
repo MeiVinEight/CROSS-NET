@@ -1,6 +1,11 @@
 package org.mve.cross.pack;
 
-import org.mve.cross.*;
+import org.mve.cross.ConnectionManager;
+import org.mve.cross.ConnectionMonitor;
+import org.mve.cross.CrossNet;
+import org.mve.cross.NetworkManager;
+import org.mve.cross.Serialization;
+import org.mve.cross.TransferManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,14 +27,16 @@ public class Connection extends Datapack
 		NetworkManager network = conn.network;
 		if (network.type == CrossNet.SIDE_SERVER)
 		{
+			CrossNet.LOG.info("Communication listen " + this.LP);
 			int port = (this.LP & 0xFFFF);
 			int idx0 = (port >> 8) & 0xFF;
 			int idx1 = (port >> 0) & 0xFF;
-			if (network.server[idx0] == null) network.server[idx0] = new ServerSocket[256];
+			if (network.server[idx0] == null) network.server[idx0] = new ConnectionMonitor[256];
 			try
 			{
-				network.server[idx0][idx1] = new ServerSocket(port);
-				CrossNet.LOG.info("Listening at " + port);
+				ServerSocket ss = new ServerSocket(port);
+				network.server[idx0][idx1] = new ConnectionMonitor(conn.network, ss);
+				new Thread(network.server[idx0][idx1]).start();
 			}
 			catch (IOException e)
 			{
@@ -39,26 +46,32 @@ public class Connection extends Datapack
 		else // SIDE_CLIENT
 		{
 			int localePort = NetworkManager.mapping(this.LP & 0xFFFF);
-			CrossNet.LOG.info("New connection at " + this.LP + ", create transfer connection to " + localePort);
-			Socket client;
-			Socket server;
+			CrossNet.LOG.info("Connection at " + this.LP + ", create transfer connection to " + localePort);
+			Socket client; // Connection with FRP endpoint
+			Socket server; // Connection with FRP server
 			try
 			{
+				// TODO Use properties ip
 				client = new Socket("127.0.0.1", localePort);
+				CrossNet.LOG.info("Connection to endpoint 127.0.0.1:" + localePort + " at " + client.getLocalPort());
 			}
 			catch (IOException e)
 			{
-				CrossNet.LOG.severe("Cannot connect to 127.0.0.1:" + localePort);
+				CrossNet.LOG.severe("Cannot connect to endpoint 127.0.0.1:" + localePort);
 				CrossNet.LOG.log(Level.SEVERE, null, e);
 				return;
 			}
+
 			try
 			{
+				String sip = NetworkManager.SERVER_IP;
+				int sp = NetworkManager.SERVER_PORT;
 				server = new Socket(NetworkManager.SERVER_IP, NetworkManager.SERVER_PORT);
+				CrossNet.LOG.info("Connection to FRP " + sip + ":" + sp + " at " + server.getLocalPort());
 			}
 			catch (IOException e)
 			{
-				CrossNet.LOG.severe("Cannot connect to " + NetworkManager.SERVER_IP + ":" + localePort);
+				CrossNet.LOG.severe("Cannot connect to FRP " + NetworkManager.SERVER_IP + ":" + NetworkManager.SERVER_PORT);
 				CrossNet.LOG.log(Level.SEVERE, null, e);
 				try
 				{
@@ -77,6 +90,17 @@ public class Connection extends Datapack
 			{
 				CrossNet.LOG.info("Handshake with " + server.getRemoteSocketAddress() + " at " + handshake.listen);
 				cm.send(handshake);
+
+				// Check port
+				Datapack pack = cm.receive();
+				if (!(pack instanceof Handshake))
+				{
+					CrossNet.LOG.warning("Handshake required: " + server.getRemoteSocketAddress());
+					cm.close();
+					client.close();
+					return;
+				}
+				pack.accept(cm);
 			}
 			catch (IOException e)
 			{

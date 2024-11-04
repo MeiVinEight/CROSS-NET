@@ -22,12 +22,13 @@ public class ConnectionMonitor implements Runnable
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("SERVER");
+		Thread.currentThread().setName("Connection-" + this.server.getLocalPort());
 		while (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
 		{
 			Socket socket = null;
 			try
 			{
+				CrossNet.LOG.info("Waiting for connection at " + this.server.getLocalPort());
 				socket = this.server.accept();
 			}
 			catch (IOException e)
@@ -47,11 +48,18 @@ public class ConnectionMonitor implements Runnable
 			while (network.connection(rp, lp) != null)
 			{
 				// Waiting
-				LockSupport.park();
+				try
+				{
+					Thread.sleep(1);
+				}
+				catch (InterruptedException e)
+				{
+				}
 			}
 			network.connection(rp, lp, socket);
 			try
 			{
+				CrossNet.LOG.info("Waiting transfer connection for " + socket.getRemoteSocketAddress());
 				this.network.communication.send(conn);
 			}
 			catch (IOException e)
@@ -67,6 +75,19 @@ public class ConnectionMonitor implements Runnable
 					ex.printStackTrace(System.out);
 				}
 			}
+		}
+	}
+
+	public void close()
+	{
+		CrossNet.LOG.info("Close server at " + this.server.getLocalPort());
+		try
+		{
+			server.close();
+		}
+		catch (IOException e)
+		{
+			CrossNet.LOG.log(Level.WARNING, null, e);
 		}
 	}
 }

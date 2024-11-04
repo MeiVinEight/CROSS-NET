@@ -4,8 +4,8 @@
 	"mapping":
 	[
 		{
-			"listen-port": 80,
-			"locale-port": 80
+			"listen-port": 8081,
+			"locale-port": 8080
 		}
 	]
 }

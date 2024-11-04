@@ -4,7 +4,6 @@ import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Transfer;
 
 import java.io.IOException;
-import java.util.logging.Level;
 
 public class TransferS2C implements Runnable
 {
@@ -21,6 +20,11 @@ public class TransferS2C implements Runnable
 		Thread.currentThread().setName("Transfer");
 		try
 		{
+			{
+				String info = "Transfer " + this.transfer.connection.socket.getRemoteSocketAddress() + " -> " +
+					this.transfer.socket.getRemoteSocketAddress();
+				CrossNet.LOG.info(info);
+			}
 			while (this.transfer.running())
 			{
 				Datapack pack = this.transfer.connection.receive();
@@ -37,11 +41,7 @@ public class TransferS2C implements Runnable
 		}
 		catch (IOException e)
 		{
-			int rp = this.transfer.RP();
-			int lp = this.transfer.LP();
-			CrossNet.LOG.severe("Transfer " + lp + " - " + rp);
-			CrossNet.LOG.log(Level.SEVERE, null, e);
-			this.transfer.close();
+			this.transfer.exception(e);
 		}
 	}
 }
