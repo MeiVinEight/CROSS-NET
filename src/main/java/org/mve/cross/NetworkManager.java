@@ -132,7 +132,7 @@ public class NetworkManager
 		{
 			this.status = NetworkManager.NETWORK_STAT_STOPPED;
 			CrossNet.LOG.log(Level.SEVERE, null, t);
-			JavaVM.exception(t);
+			this.close();
 			throw new RuntimeException(t);
 		}
 	}

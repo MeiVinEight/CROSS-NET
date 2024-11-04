@@ -26,7 +26,13 @@ public class CrossNet
 		{
 			CrossNet.LOG.info("Cross-Net starting on client");
 		}
-		NetworkManager nm = new NetworkManager(side);
+		try
+		{
+			NetworkManager nm = new NetworkManager(side);
+		}
+		catch (Throwable ignored)
+		{
+		}
 	}
 
 	static

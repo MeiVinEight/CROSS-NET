@@ -48,13 +48,7 @@ public class ConnectionMonitor implements Runnable
 			while (network.connection(rp, lp) != null)
 			{
 				// Waiting
-				try
-				{
-					Thread.sleep(1);
-				}
-				catch (InterruptedException e)
-				{
-				}
+				Thread.yield();
 			}
 			network.connection(rp, lp, socket);
 			try
