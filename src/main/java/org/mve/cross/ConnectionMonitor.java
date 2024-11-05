@@ -5,13 +5,13 @@ import org.mve.cross.pack.Connection;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 
 public class ConnectionMonitor implements Runnable
 {
 	private final NetworkManager network;
 	private final ServerSocket server;
+	private ConnectionWaiting waiting = null;
 
 	public ConnectionMonitor(NetworkManager network, ServerSocket server)
 	{
@@ -45,36 +45,42 @@ public class ConnectionMonitor implements Runnable
 			Connection conn = new Connection();
 			conn.LP = (short) lp;
 			// Assume only one thread monitor this port
-			while (network.connection(rp, lp) != null)
-			{
-				// Waiting
-				Thread.yield();
-			}
-			network.connection(rp, lp, socket);
+			if (this.waiting != null) this.waiting.close();
+			this.waiting = new ConnectionWaiting(socket);
 			try
 			{
 				CrossNet.LOG.info("Waiting transfer connection for " + socket.getRemoteSocketAddress());
 				this.network.communication.send(conn);
+				ConnectionManager cm = this.waiting.get();
+				if (cm == null) throw new NullPointerException();
+
+				CrossNet.LOG.info(
+					"Transfer connection " +
+						socket.getRemoteSocketAddress() +
+						" - " +
+						cm.socket.getRemoteSocketAddress()
+				);
+				TransferManager transfer = new TransferManager(cm, socket);
+				this.network.connection(transfer.RP(), transfer.LP(), transfer);
 			}
-			catch (IOException e)
+			catch (Throwable e)
 			{
-				e.printStackTrace(System.out);
-				network.connection(rp, lp, null);
-				try
-				{
-					socket.close();
-				}
-				catch (IOException ex)
-				{
-					ex.printStackTrace(System.out);
-				}
+				CrossNet.LOG.severe("Connection waiting error");
+				CrossNet.LOG.log(Level.SEVERE, null, e);
+				this.waiting.close();
 			}
+			this.waiting = null;
 		}
+	}
+
+	public ConnectionWaiting waiting()
+	{
+		return this.waiting;
 	}
 
 	public void close()
 	{
-		CrossNet.LOG.info("Close server at " + this.server.getLocalPort());
+		CrossNet.LOG.info("Connection server " + this.server.getLocalPort() + " closing");
 		try
 		{
 			server.close();

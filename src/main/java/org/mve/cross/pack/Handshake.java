@@ -1,16 +1,15 @@
 package org.mve.cross.pack;
 
 import org.mve.cross.ConnectionManager;
+import org.mve.cross.ConnectionWaiting;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.Serialization;
-import org.mve.cross.TransferManager;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -60,8 +59,9 @@ public class Handshake extends Datapack
 			CrossNet.LOG.info("Transfer connection with " + addr + " at " + this.listen);
 			if (conn.network.type == CrossNet.SIDE_SERVER)
 			{
-				Socket sock = (Socket) conn.network.connection(0, this.listen);
-				if (sock == null)
+				ConnectionWaiting waiting = null;
+				if (conn.network.server[this.listen] != null) waiting = conn.network.server[this.listen].waiting();
+				if (waiting == null)
 				{
 					CrossNet.LOG.severe("NO CONNECTION AT " + this.listen);
 					try
@@ -74,9 +74,7 @@ public class Handshake extends Datapack
 					}
 					return;
 				}
-				conn.network.connection(0, this.listen, null);
-				CrossNet.LOG.info("Create transfer " + sock.getRemoteSocketAddress() + " - " + conn.socket.getRemoteSocketAddress());
-				conn.network.connection(conn.socket.getPort(), this.listen, new TransferManager(conn, sock));
+				waiting.complete(conn);
 			}
 			/*
 			else // SIDE_CLIENT

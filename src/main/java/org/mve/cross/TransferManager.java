@@ -43,9 +43,14 @@ public class TransferManager
 	{
 		CrossNet.LOG.info("Transfer close");
 		this.running = false;
+		this.connection.network.connection(this.RP(), this.LP(), null);
 		try
 		{
-			CrossNet.LOG.info("Closing server connection");
+			CrossNet.LOG.info(
+				"Transfer connection " +
+					this.connection.socket.getRemoteSocketAddress() +
+					" closing"
+			);
 			this.connection.close();
 		}
 		catch (IOException e)
@@ -54,7 +59,11 @@ public class TransferManager
 		}
 		try
 		{
-			CrossNet.LOG.info("Closing client connection");
+			CrossNet.LOG.info(
+				"Transfer connection " +
+					this.socket.getRemoteSocketAddress() +
+					" closing"
+			);
 			this.socket.close();
 		}
 		catch (IOException e)

@@ -35,9 +35,9 @@ public class NetworkManager
 	// Communication connect between FRP server and client
 	public ConnectionManager communication;
 	// Server listen connections from all users
-	public ConnectionMonitor[][] server = new ConnectionMonitor[256][];
+	public ConnectionMonitor[] server = new ConnectionMonitor[65536];
 	private int status = NetworkManager.NETWORK_STAT_READY;
-	public Object[][][][] connection = new Object[256][][][];
+	public TransferManager[][][][] connection = new TransferManager[256][][][];
 
 	public NetworkManager(int type)
 	{
@@ -167,17 +167,11 @@ public class NetworkManager
 			this.transfer.close();
 		}
 
-		for (ConnectionMonitor[] s2 : this.server)
+		for (ConnectionMonitor monitor : this.server)
 		{
-			if (s2 != null)
+			if (monitor != null)
 			{
-				for (ConnectionMonitor monitor : s2)
-				{
-					if (monitor != null)
-					{
-						monitor.close();
-					}
-				}
+				monitor.close();
 			}
 		}
 	}
@@ -189,35 +183,35 @@ public class NetworkManager
 		return local;
 	}
 
-	public Object connection(int rp, int lp)
+	public TransferManager connection(int rp, int lp)
 	{
 		int idx0 = (rp >> 8) & 0xFF;
 		int idx1 = (rp >> 0) & 0xFF;
 		int idx2 = (lp >> 8) & 0xFF;
 		int idx3 = (lp >> 0) & 0xFF;
-		Object[][][][] s0 = this.connection;
-		if (s0[idx0] == null) s0[idx0] = new Object[256][][];
-		Object[][][] s1 = s0[idx0];
-		if (s1[idx1] == null) s1[idx1] = new Object[256][];
-		Object[][] s2 = s1[idx1];
-		if (s2[idx2] == null) s2[idx2] = new Object[256];
-		Object[] s3 = s2[idx2];
+		TransferManager[][][][] s0 = this.connection;
+		if (s0[idx0] == null) s0[idx0] = new TransferManager[256][][];
+		TransferManager[][][] s1 = s0[idx0];
+		if (s1[idx1] == null) s1[idx1] = new TransferManager[256][];
+		TransferManager[][] s2 = s1[idx1];
+		if (s2[idx2] == null) s2[idx2] = new TransferManager[256];
+		TransferManager[] s3 = s2[idx2];
 		return s3[idx3];
 	}
 
-	public void connection(int rp, int lp, Object obj)
+	public void connection(int rp, int lp, TransferManager obj)
 	{
 		int idx0 = (rp >> 8) & 0xFF;
 		int idx1 = (rp >> 0) & 0xFF;
 		int idx2 = (lp >> 8) & 0xFF;
 		int idx3 = (lp >> 0) & 0xFF;
-		Object[][][][] s0 = this.connection;
-		if (s0[idx0] == null) s0[idx0] = new Object[256][][];
-		Object[][][] s1 = s0[idx0];
-		if (s1[idx1] == null) s1[idx1] = new Object[256][];
-		Object[][] s2 = s1[idx1];
-		if (s2[idx2] == null) s2[idx2] = new Object[256];
-		Object[] s3 = s2[idx2];
+		TransferManager[][][][] s0 = this.connection;
+		if (s0[idx0] == null) s0[idx0] = new TransferManager[256][][];
+		TransferManager[][][] s1 = s0[idx0];
+		if (s1[idx1] == null) s1[idx1] = new TransferManager[256][];
+		TransferManager[][] s2 = s1[idx1];
+		if (s2[idx2] == null) s2[idx2] = new TransferManager[256];
+		TransferManager[] s3 = s2[idx2];
 		s3[idx3] = obj;
 	}
 

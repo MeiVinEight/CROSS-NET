@@ -39,8 +39,10 @@ public class CrossFormatter extends Formatter
 			.append("] [")
 			.append(Thread.currentThread().getName())
 			.append("]");
+		boolean hasMsg = false;
 		if (record.getMessage() != null && !record.getMessage().isEmpty())
 		{
+			hasMsg = true;
 			builder.append(' ').append(record.getMessage());
 		}
 		if (record.getThrown() != null)
@@ -48,7 +50,7 @@ public class CrossFormatter extends Formatter
 			StringWriter writer = new StringWriter();
 			PrintWriter ps = new PrintWriter(writer);
 			record.getThrown().printStackTrace(ps);
-			builder.append(' ').append(writer);
+			builder.append(hasMsg ? '\n' : ' ').append(writer);
 		}
 		while (builder.length() > 0 && builder.charAt(builder.length() - 1) <= 0x20)
 		{

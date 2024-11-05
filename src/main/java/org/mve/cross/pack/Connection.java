@@ -29,14 +29,11 @@ public class Connection extends Datapack
 		{
 			CrossNet.LOG.info("Communication listen " + this.LP);
 			int port = (this.LP & 0xFFFF);
-			int idx0 = (port >> 8) & 0xFF;
-			int idx1 = (port >> 0) & 0xFF;
-			if (network.server[idx0] == null) network.server[idx0] = new ConnectionMonitor[256];
 			try
 			{
 				ServerSocket ss = new ServerSocket(port);
-				network.server[idx0][idx1] = new ConnectionMonitor(conn.network, ss);
-				new Thread(network.server[idx0][idx1]).start();
+				network.server[port] = new ConnectionMonitor(conn.network, ss);
+				new Thread(network.server[port]).start();
 			}
 			catch (IOException e)
 			{
