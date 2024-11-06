@@ -33,8 +33,6 @@ public class CrossNet
 
 	static
 	{
-		LogManager.getLogManager().addLogger(new CrossLogger());
-		LOG = (CrossLogger) LogManager.getLogManager().getLogger(CrossLogger.LOGGER_NAME);
 		JsonObject property = null;
 		try (FileInputStream propertyFile = new FileInputStream(PROPERTIES_FILE))
 		{
@@ -48,5 +46,16 @@ public class CrossNet
 			JavaVM.exception(t);
 		}
 		PROPERTIES = property;
+		String logFile = "./logs";
+		try
+		{
+			logFile = PROPERTIES.get("log").getAsString();
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace(System.out);
+		}
+		LogManager.getLogManager().addLogger(new CrossLogger(logFile));
+		LOG = (CrossLogger) LogManager.getLogManager().getLogger(CrossLogger.LOGGER_NAME);
 	}
 }

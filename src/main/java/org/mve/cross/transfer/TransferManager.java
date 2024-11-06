@@ -75,7 +75,7 @@ public class TransferManager
 			int rp = this.RP();
 			int lp = this.LP();
 			CrossNet.LOG.warning("Transfer " + lp + " - " + rp + " closed");
-			CrossNet.LOG.log(Level.WARNING, null, e);
+			// CrossNet.LOG.log(Level.WARNING, null, e);
 			this.close();
 		}
 	}

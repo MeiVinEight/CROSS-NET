@@ -1,4 +1,5 @@
 {
+	"log": "./logs",
 	"server-ip": "127.0.0.1",
 	"server-port": 12138,
 	"mapping":

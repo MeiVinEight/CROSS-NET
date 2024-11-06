@@ -180,6 +180,8 @@ public class NetworkManager
 				monitor.close();
 			}
 		}
+
+		CrossNet.LOG.close();
 	}
 
 	public static int mapping(int port)

@@ -10,27 +10,43 @@ import java.util.logging.LogRecord;
 
 public class CrossFormatter extends Formatter
 {
+	public static final int FORMAT_TYPE_CONSOLE = 0;
+	public static final int FORMAT_TYPE_FILE = 1;
+	private final int type;
 	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
+
+	public CrossFormatter(int type)
+	{
+		this.type = type;
+	}
+
+	public CrossFormatter()
+	{
+		this(FORMAT_TYPE_CONSOLE);
+	}
 
 	@Override
 	public String format(LogRecord record)
 	{
 		StringBuilder builder = new StringBuilder();
-		if (record.getLevel() == Level.SEVERE)
+		if (this.type == CrossFormatter.FORMAT_TYPE_CONSOLE)
 		{
-			builder.append("\u001B[1m\u001B[91m");
-		}
-		else if (record.getLevel() == Level.WARNING)
-		{
-			builder.append("\u001B[1m\u001B[33m");
-		}
-		else if (record.getLevel() == Level.INFO)
-		{
-			builder.append("\u001B[0m");
-		}
-		else if (record.getLevel() == Level.FINE)
-		{
-			builder.append("\u001B[1m\u001B[94m");
+			if (record.getLevel() == Level.SEVERE)
+			{
+				builder.append("\u001B[1m\u001B[91m");
+			}
+			else if (record.getLevel() == Level.WARNING)
+			{
+				builder.append("\u001B[1m\u001B[33m");
+			}
+			else if (record.getLevel() == Level.INFO)
+			{
+				builder.append("\u001B[0m");
+			}
+			else if (record.getLevel() == Level.FINE)
+			{
+				builder.append("\u001B[1m\u001B[94m");
+			}
 		}
 		builder
 			.append('[')
@@ -56,6 +72,7 @@ public class CrossFormatter extends Formatter
 		{
 			builder.deleteCharAt(builder.length() - 1);
 		}
-		return builder.append("\u001B[0m\n").toString();
+		if (this.type == CrossFormatter.FORMAT_TYPE_CONSOLE) builder.append("\u001B[0m");
+		return builder.append("\n").toString();
 	}
 }
