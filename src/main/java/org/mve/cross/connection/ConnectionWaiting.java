@@ -34,6 +34,7 @@ public class ConnectionWaiting extends Synchronized
 			Socket client = this.connection.poll();
 			if (client == null) return;
 			Socket server;
+			CrossNet.LOG.info("Connection waiting " + this.RP);
 			try
 			{
 				String sip = NetworkManager.SERVER_IP;
@@ -65,7 +66,7 @@ public class ConnectionWaiting extends Synchronized
 				{
 					CrossNet.LOG.warning("Handshake required: " + server.getRemoteSocketAddress());
 					cm.close();
-					client.close();
+					this.connection.offer(client);
 					return;
 				}
 				pack.accept(cm);
