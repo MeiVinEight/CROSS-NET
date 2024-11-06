@@ -16,7 +16,7 @@ public class Handshake extends Datapack
 {
 	public static final int ID = 0x01; // HANDSHAKE
 	// Random generated uuid
-	public static final UUID SIGNATURE = new UUID(2684175183751368306L, -4907171764388432698L);
+	public static final UUID SIGNATURE = new UUID(-5915544772912503124L, -8851214045231297395L);
 
 	public long most;
 	public long least;

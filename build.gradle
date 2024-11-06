@@ -20,7 +20,7 @@ plugins {
 }
 
 group = "org.mve"
-version = "1.0.0"
+version = "1.0.1-C2"
 
 repositories {
     maven { url 'https://mirrors.cloud.tencent.com/gradle/'}
