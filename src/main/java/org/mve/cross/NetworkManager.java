@@ -2,9 +2,15 @@ package org.mve.cross;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.mve.cross.concurrent.SynchronizeNET;
+import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMonitor;
+import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.pack.Connection;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
+import org.mve.cross.transfer.TransferManager;
+import org.mve.cross.transfer.TransferMonitor;
 import org.mve.invoke.common.JavaVM;
 
 import java.io.IOException;
@@ -35,9 +41,11 @@ public class NetworkManager
 	// Communication connect between FRP server and client
 	public ConnectionManager communication;
 	// Server listen connections from all users
-	public ConnectionMonitor[] server = new ConnectionMonitor[65536];
+	public final ConnectionMonitor[] server = new ConnectionMonitor[65536];
+	public final ConnectionWaiting[] waiting = new ConnectionWaiting[65536];
 	private int status = NetworkManager.NETWORK_STAT_READY;
 	public TransferManager[][][][] connection = new TransferManager[256][][][];
+	public final SynchronizeNET synchronize = new SynchronizeNET(this);
 
 	public NetworkManager(int type)
 	{
@@ -72,6 +80,7 @@ public class NetworkManager
 					catch (Throwable t)
 					{
 						CrossNet.LOG.log(Level.WARNING, null, t);
+						this.communication = null;
 					}
 				}
 				this.status = NETWORK_STAT_RUNNING;
@@ -122,6 +131,10 @@ public class NetworkManager
 				{
 					int listenPort = entry.getKey();
 					CrossNet.LOG.info("Communication listen " + listenPort);
+					ConnectionWaiting waiting = new ConnectionWaiting(this, listenPort);
+					waiting.period = 20;
+					this.waiting[listenPort] = waiting;
+					this.synchronize.offer(waiting);
 					Connection conn = new Connection();
 					conn.LP = (short) listenPort;
 					this.communication.send(conn);
@@ -148,25 +161,18 @@ public class NetworkManager
 
 		CrossNet.LOG.warning("CLOSE");
 		this.status = NetworkManager.NETWORK_STAT_STOPPED;
-		if (this.communication != null)
-		{
-			try
-			{
-				CrossNet.LOG.info("Close comminucation");
-				this.communication.close();
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace(System.out);
-			}
-		}
+		CrossNet.LOG.info("Synchronize");
+		this.synchronize.close();
+		CrossNet.LOG.info("Communication");
+		this.communication.close();
 
 		if (this.transfer != null)
 		{
-			CrossNet.LOG.info("Close proxy server");
+			CrossNet.LOG.info("Transfer waiting");
 			this.transfer.close();
 		}
 
+		CrossNet.LOG.info("Transfer connection");
 		for (ConnectionMonitor monitor : this.server)
 		{
 			if (monitor != null)

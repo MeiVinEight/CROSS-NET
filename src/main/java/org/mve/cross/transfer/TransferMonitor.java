@@ -1,5 +1,8 @@
-package org.mve.cross;
+package org.mve.cross.transfer;
 
+import org.mve.cross.CrossNet;
+import org.mve.cross.NetworkManager;
+import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 
@@ -58,8 +61,11 @@ public class TransferMonitor implements Runnable
 		}
 		catch (IOException e)
 		{
-			CrossNet.LOG.severe("Transfer Monitor error");
-			CrossNet.LOG.log(Level.SEVERE, null, e);
+			if (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
+			{
+				CrossNet.LOG.severe("Transfer waiting error");
+				CrossNet.LOG.log(Level.SEVERE, null, e);
+			}
 		}
 		this.network.close();
 	}

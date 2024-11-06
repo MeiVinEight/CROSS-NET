@@ -1,11 +1,11 @@
 package org.mve.cross.pack;
 
-import org.mve.cross.ConnectionManager;
-import org.mve.cross.ConnectionMonitor;
+import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMonitor;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.Serialization;
-import org.mve.cross.TransferManager;
+import org.mve.cross.connection.ConnectionWaiting;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +33,8 @@ public class Connection extends Datapack
 			{
 				ServerSocket ss = new ServerSocket(port);
 				network.server[port] = new ConnectionMonitor(conn.network, ss);
+				network.waiting[port] = new ConnectionWaiting(network, port);
+				network.waiting[port].period = 20;
 				new Thread(network.server[port]).start();
 			}
 			catch (IOException e)
@@ -45,7 +47,6 @@ public class Connection extends Datapack
 			int localePort = NetworkManager.mapping(this.LP & 0xFFFF);
 			CrossNet.LOG.info("Connection at " + this.LP + ", create transfer connection to " + localePort);
 			Socket client; // Connection with FRP endpoint
-			Socket server; // Connection with FRP server
 			try
 			{
 				// TODO Use properties ip
@@ -59,57 +60,7 @@ public class Connection extends Datapack
 				return;
 			}
 
-			try
-			{
-				String sip = NetworkManager.SERVER_IP;
-				int sp = NetworkManager.SERVER_PORT;
-				server = new Socket(NetworkManager.SERVER_IP, NetworkManager.SERVER_PORT);
-				CrossNet.LOG.info("Connection to FRP " + sip + ":" + sp + " at " + server.getLocalPort());
-			}
-			catch (IOException e)
-			{
-				CrossNet.LOG.severe("Cannot connect to FRP " + NetworkManager.SERVER_IP + ":" + NetworkManager.SERVER_PORT);
-				CrossNet.LOG.log(Level.SEVERE, null, e);
-				try
-				{
-					client.close();
-				}
-				catch (IOException e1)
-				{
-					CrossNet.LOG.log(Level.SEVERE, null, e1);
-				}
-				return;
-			}
-			ConnectionManager cm = new ConnectionManager(conn.network, server);
-			Handshake handshake = new Handshake();
-			handshake.listen = this.LP;
-			try
-			{
-				CrossNet.LOG.info("Handshake with " + server.getRemoteSocketAddress() + " at " + handshake.listen);
-				cm.send(handshake);
-
-				// Check port
-				Datapack pack = cm.receive();
-				if (!(pack instanceof Handshake))
-				{
-					CrossNet.LOG.warning("Handshake required: " + server.getRemoteSocketAddress());
-					cm.close();
-					client.close();
-					return;
-				}
-				pack.accept(cm);
-			}
-			catch (IOException e)
-			{
-				CrossNet.LOG.severe("Handshake failed with " + server.getRemoteSocketAddress());
-				CrossNet.LOG.log(Level.SEVERE, null, e);
-				return;
-			}
-			// TODO Dual-transfer
-			// new Thread(new TransferS2C(cm, client)).start();
-			// new Thread(new TransferC2S(cm, client)).start();
-			TransferManager tm = new TransferManager(cm, client);
-			conn.network.connection(tm.RP(), tm.LP(), tm);
+			conn.network.waiting[this.LP].offer(client);
 		}
 	}
 

@@ -2,6 +2,7 @@ package org.mve.cross;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.mve.cross.logger.CrossLogger;
 import org.mve.invoke.common.JavaVM;
 
 import java.io.FileInputStream;
@@ -26,13 +27,8 @@ public class CrossNet
 		{
 			CrossNet.LOG.info("Cross-Net starting on client");
 		}
-		try
-		{
-			NetworkManager nm = new NetworkManager(side);
-		}
-		catch (Throwable ignored)
-		{
-		}
+		NetworkManager nm = new NetworkManager(side);
+		nm.synchronize.run();
 	}
 
 	static

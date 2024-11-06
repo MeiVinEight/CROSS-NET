@@ -1,5 +1,6 @@
 package org.mve.cross;
 
+import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.pack.Datapack;
 
 import java.io.EOFException;

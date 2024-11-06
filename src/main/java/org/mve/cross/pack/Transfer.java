@@ -1,6 +1,6 @@
 package org.mve.cross.pack;
 
-import org.mve.cross.ConnectionManager;
+import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.Serialization;
 
 import java.io.IOException;

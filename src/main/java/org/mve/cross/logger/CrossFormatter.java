@@ -1,4 +1,4 @@
-package org.mve.cross;
+package org.mve.cross.logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

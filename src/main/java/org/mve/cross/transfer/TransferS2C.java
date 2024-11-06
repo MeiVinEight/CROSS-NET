@@ -1,5 +1,6 @@
-package org.mve.cross;
+package org.mve.cross.transfer;
 
+import org.mve.cross.CrossNet;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Transfer;
 

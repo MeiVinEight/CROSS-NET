@@ -1,4 +1,7 @@
-package org.mve.cross;
+package org.mve.cross.transfer;
+
+import org.mve.cross.CrossNet;
+import org.mve.cross.connection.ConnectionManager;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -44,25 +47,18 @@ public class TransferManager
 		CrossNet.LOG.info("Transfer close");
 		this.running = false;
 		this.connection.network.connection(this.RP(), this.LP(), null);
+		CrossNet.LOG.info(
+			"Transfer connection server " +
+			this.connection.socket.getRemoteSocketAddress() +
+			" closing"
+		);
+		this.connection.close();
 		try
 		{
 			CrossNet.LOG.info(
-				"Transfer connection " +
-					this.connection.socket.getRemoteSocketAddress() +
-					" closing"
-			);
-			this.connection.close();
-		}
-		catch (IOException e)
-		{
-			CrossNet.LOG.log(Level.WARNING, null, e);
-		}
-		try
-		{
-			CrossNet.LOG.info(
-				"Transfer connection " +
-					this.socket.getRemoteSocketAddress() +
-					" closing"
+				"Transfer connection client " +
+				this.socket.getRemoteSocketAddress() +
+				" closing"
 			);
 			this.socket.close();
 		}

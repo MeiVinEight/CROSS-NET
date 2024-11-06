@@ -1,7 +1,7 @@
 package org.mve.cross.pack;
 
-import org.mve.cross.ConnectionManager;
-import org.mve.cross.ConnectionWaiting;
+import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.Serialization;
@@ -11,7 +11,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.UUID;
-import java.util.logging.Level;
 
 public class Handshake extends Datapack
 {
@@ -35,14 +34,7 @@ public class Handshake extends Datapack
 		if (!new UUID(this.most, this.least).equals(SIGNATURE))
 		{
 			CrossNet.LOG.warning("UNKNOWN CONNECTION: " + conn.socket.getRemoteSocketAddress());
-			try
-			{
-				conn.close();
-			}
-			catch (IOException e)
-			{
-				CrossNet.LOG.log(Level.SEVERE, null, e);
-			}
+			conn.close();
 			return;
 		}
 		// TODO Next generation
@@ -59,22 +51,14 @@ public class Handshake extends Datapack
 			CrossNet.LOG.info("Transfer connection with " + addr + " at " + this.listen);
 			if (conn.network.type == CrossNet.SIDE_SERVER)
 			{
-				ConnectionWaiting waiting = null;
-				if (conn.network.server[this.listen] != null) waiting = conn.network.server[this.listen].waiting();
+				ConnectionWaiting waiting = conn.network.waiting[this.listen];
 				if (waiting == null)
 				{
 					CrossNet.LOG.severe("NO CONNECTION AT " + this.listen);
-					try
-					{
-						conn.close();
-					}
-					catch (IOException e)
-					{
-						CrossNet.LOG.log(Level.SEVERE, null, e);
-					}
+					conn.close();
 					return;
 				}
-				waiting.complete(conn);
+				waiting.poll(conn);
 			}
 			/*
 			else // SIDE_CLIENT

@@ -1,5 +1,7 @@
-package org.mve.cross;
+package org.mve.cross.connection;
 
+import org.mve.cross.CrossNet;
+import org.mve.cross.NetworkManager;
 import org.mve.cross.pack.Connection;
 
 import java.io.IOException;
@@ -11,7 +13,6 @@ public class ConnectionMonitor implements Runnable
 {
 	private final NetworkManager network;
 	private final ServerSocket server;
-	private ConnectionWaiting waiting = null;
 
 	public ConnectionMonitor(NetworkManager network, ServerSocket server)
 	{
@@ -33,49 +34,38 @@ public class ConnectionMonitor implements Runnable
 			}
 			catch (IOException e)
 			{
-				CrossNet.LOG.log(Level.SEVERE, null, e);
+				if (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
+				{
+					CrossNet.LOG.log(Level.SEVERE, null, e);
+				}
 			}
 			if (socket == null) continue;
 
 
-			int rp = 0;
 			int lp = socket.getLocalPort();
 			CrossNet.LOG.info("Connection from " + socket.getRemoteSocketAddress() + " at " + lp);
-
 			Connection conn = new Connection();
 			conn.LP = (short) lp;
-			// Assume only one thread monitor this port
-			if (this.waiting != null) this.waiting.close();
-			this.waiting = new ConnectionWaiting(socket);
 			try
 			{
-				CrossNet.LOG.info("Waiting transfer connection for " + socket.getRemoteSocketAddress());
 				this.network.communication.send(conn);
-				ConnectionManager cm = this.waiting.get();
-				if (cm == null) throw new NullPointerException();
-
-				CrossNet.LOG.info(
-					"Transfer connection " +
-						socket.getRemoteSocketAddress() +
-						" - " +
-						cm.socket.getRemoteSocketAddress()
-				);
-				TransferManager transfer = new TransferManager(cm, socket);
-				this.network.connection(transfer.RP(), transfer.LP(), transfer);
 			}
-			catch (Throwable e)
+			catch (IOException e)
 			{
-				CrossNet.LOG.severe("Connection waiting error");
+				CrossNet.LOG.severe("Connection send failed");
 				CrossNet.LOG.log(Level.SEVERE, null, e);
-				this.waiting.close();
+				try
+				{
+					socket.close();
+				}
+				catch (IOException ex)
+				{
+					CrossNet.LOG.log(Level.SEVERE, null, ex);
+				}
+				continue;
 			}
-			this.waiting = null;
+			this.network.waiting[this.server.getLocalPort()].offer(socket);
 		}
-	}
-
-	public ConnectionWaiting waiting()
-	{
-		return this.waiting;
 	}
 
 	public void close()

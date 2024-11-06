@@ -1,4 +1,4 @@
-package org.mve.cross;
+package org.mve.cross.logger;
 
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
