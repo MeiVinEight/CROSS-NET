@@ -34,7 +34,6 @@ public class Connection extends Datapack
 				ServerSocket ss = new ServerSocket(port);
 				network.server[port] = new ConnectionMonitor(conn.network, ss);
 				network.waiting[port] = new ConnectionWaiting(network, port);
-				network.waiting[port].period = 20;
 				new Thread(network.server[port]).start();
 			}
 			catch (IOException e)

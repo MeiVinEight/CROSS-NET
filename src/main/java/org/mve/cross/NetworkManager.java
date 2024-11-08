@@ -132,7 +132,6 @@ public class NetworkManager
 					int listenPort = entry.getKey();
 					CrossNet.LOG.info("Communication listen " + listenPort);
 					ConnectionWaiting waiting = new ConnectionWaiting(this, listenPort);
-					waiting.period = 20;
 					this.waiting[listenPort] = waiting;
 					this.synchronize.offer(waiting);
 					Connection conn = new Connection();
