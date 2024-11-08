@@ -31,7 +31,6 @@ public class NetworkManager
 	private static final Map<Integer, Integer> MAPPING = new HashMap<>();
 	public static final String SERVER_IP;
 	public static final int SERVER_PORT;
-	public static final int NETWORK_STAT_READY = 0;
 	public static final int NETWORK_STAT_COMMUNICATION = 1;
 	public static final int NETWORK_STAT_RUNNING = 2;
 	public static final int NETWORK_STAT_STOPPED = 3;
