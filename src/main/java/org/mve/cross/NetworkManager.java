@@ -43,7 +43,7 @@ public class NetworkManager
 	// Server listen connections from all users
 	public final ConnectionMonitor[] server = new ConnectionMonitor[65536];
 	public final ConnectionWaiting[] waiting = new ConnectionWaiting[65536];
-	private int status = NetworkManager.NETWORK_STAT_READY;
+	private int status;
 	public TransferManager[][][][] connection = new TransferManager[256][][][];
 	public final SynchronizeNET synchronize = new SynchronizeNET(this);
 
