@@ -3,12 +3,12 @@ package org.mve.cross.connection;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.concurrent.Synchronized;
-import org.mve.cross.pack.Connection;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 import org.mve.cross.transfer.TransferManager;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,16 +31,18 @@ public class ConnectionWaiting extends Synchronized
 	{
 		if (this.network.type == CrossNet.SIDE_CLIENT)
 		{
-			Socket client = this.connection.poll();
+			Socket client = this.connection.peek();
 			if (client == null) return;
 			Socket server;
-			CrossNet.LOG.info("Connection waiting " + this.RP);
+			CrossNet.LOG.info("Connection waiting " + this.RP + " for " + client.getRemoteSocketAddress());
 			try
 			{
 				String sip = NetworkManager.SERVER_IP;
 				int sp = NetworkManager.SERVER_PORT;
-				server = new Socket(NetworkManager.SERVER_IP, NetworkManager.SERVER_PORT);
+				server = new Socket(/*NetworkManager.SERVER_IP, NetworkManager.SERVER_PORT*/);
+				server.connect(new InetSocketAddress(sip, sp), 5000); // 5s timeout
 				CrossNet.LOG.info("Connection to FRP " + sip + ":" + sp + " at " + server.getLocalPort());
+				server.setSoTimeout(5000);
 			}
 			catch (IOException e)
 			{
@@ -57,10 +59,11 @@ public class ConnectionWaiting extends Synchronized
 			handshake.listen = (short) this.RP;
 			try
 			{
-				CrossNet.LOG.info("Handshake with " + server.getRemoteSocketAddress() + " at " + handshake.listen);
+				CrossNet.LOG.info("Handshake to " + server.getRemoteSocketAddress() + " at " + handshake.listen);
 				cm.send(handshake);
 
 				// Check port
+				CrossNet.LOG.info("Handshake from " + server.getRemoteSocketAddress() + " at " + handshake.listen);
 				Datapack pack = cm.receive();
 				if (!(pack instanceof Handshake))
 				{
@@ -76,12 +79,7 @@ public class ConnectionWaiting extends Synchronized
 				CrossNet.LOG.severe("Handshake failed with " + server.getRemoteSocketAddress());
 				CrossNet.LOG.log(Level.SEVERE, null, e);
 				cm.close();
-				this.connection.offer(client);
-				return;
 			}
-
-			TransferManager tm = new TransferManager(cm, client);
-			this.network.connection(tm.LP(), tm.LP(), tm);
 		}
 	}
 
@@ -89,6 +87,13 @@ public class ConnectionWaiting extends Synchronized
 	{
 		if (socket == null) return;
 		this.connection.offer(socket);
+		CrossNet.LOG.info(
+			"Connection waiting for " +
+			socket.getRemoteSocketAddress() +
+			", " +
+			this.connection.size() +
+			" connection(s)"
+		);
 	}
 
 	public void poll(ConnectionManager cm)
@@ -105,20 +110,13 @@ public class ConnectionWaiting extends Synchronized
 			"Transfer connection " +
 			socket.getRemoteSocketAddress() +
 			" - " +
-			cm.socket.getRemoteSocketAddress()
+			cm.socket.getRemoteSocketAddress() +
+			", " +
+			this.connection.size() +
+			" connection(s)"
 		);
-		int count = this.count();
-		if (count > 0)
-		{
-			CrossNet.LOG.info("Connection " + this.RP + " remaining " + count + " waiter(s)");
-		}
 		TransferManager transfer = new TransferManager(cm, socket);
 		this.network.connection(transfer.RP(), transfer.LP(), transfer);
-	}
-
-	public int count()
-	{
-		return this.connection.size();
 	}
 
 	public void close()

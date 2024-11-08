@@ -18,7 +18,7 @@ public class TransferC2S implements Runnable
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("Transfer");
+		Thread.currentThread().setName("Transfer-" + this.transfer.RP());
 		try
 		{
 			{

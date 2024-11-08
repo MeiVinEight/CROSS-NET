@@ -48,24 +48,14 @@ public class Handshake extends Datapack
 		else
 		{
 			// TODO Transfer handshake
-			CrossNet.LOG.info("Transfer connection with " + addr + " at " + this.listen);
-			if (conn.network.type == CrossNet.SIDE_SERVER)
+			ConnectionWaiting waiting = conn.network.waiting[this.listen];
+			if (waiting == null)
 			{
-				ConnectionWaiting waiting = conn.network.waiting[this.listen];
-				if (waiting == null)
-				{
-					CrossNet.LOG.severe("NO CONNECTION AT " + this.listen);
-					conn.close();
-					return;
-				}
-				waiting.poll(conn);
+				CrossNet.LOG.severe("NO CONNECTION AT " + this.listen);
+				conn.close();
+				return;
 			}
-			/*
-			else // SIDE_CLIENT
-			{
-				// TODO Nothing to do
-			}
-			*/
+			waiting.poll(conn);
 		}
 	}
 

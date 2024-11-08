@@ -32,12 +32,11 @@ public class TransferMonitor implements Runnable
 			{
 				CrossNet.LOG.info("Waiting for transfer connection at " + this.server.getLocalPort());
 				Socket socket = this.server.accept();
+				socket.setSoTimeout(5000);
+				ConnectionManager cm = new ConnectionManager(this.network, socket);
 				try
 				{
 					// TODO Check connection source (Handshake key)
-					ConnectionManager cm = new ConnectionManager(this.network, socket);
-					Handshake handshake = new Handshake();
-					cm.send(handshake);
 					Datapack pack = cm.receive();
 					if (!(pack instanceof Handshake))
 					{
@@ -45,6 +44,9 @@ public class TransferMonitor implements Runnable
 						cm.close();
 						continue;
 					}
+					Handshake handshake = new Handshake();
+					handshake.listen = ((Handshake) pack).listen;
+					cm.send(handshake);
 					pack.accept(cm);
 					if (cm.socket.isClosed())
 					{
@@ -56,6 +58,7 @@ public class TransferMonitor implements Runnable
 					CrossNet.LOG.severe("Handshake error");
 					CrossNet.LOG.log(Level.SEVERE, null, e);
 					socket.close();
+					cm.close();
 				}
 			}
 		}
