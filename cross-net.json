@@ -2,6 +2,10 @@
 	"log": "./logs",
 	"server-ip": "127.0.0.1",
 	"server-port": 12138,
+	"communication":
+	{
+		"connect": 10000
+	},
 	"mapping":
 	[
 		{

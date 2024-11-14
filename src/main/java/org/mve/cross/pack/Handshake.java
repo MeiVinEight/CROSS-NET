@@ -1,6 +1,7 @@
 package org.mve.cross.pack;
 
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
@@ -10,7 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class Handshake extends Datapack
 {
@@ -39,11 +42,34 @@ public class Handshake extends Datapack
 		}
 		// TODO Next generation
 		InetSocketAddress addr = (InetSocketAddress) conn.socket.getRemoteSocketAddress();
-		if (conn.network.status() == NetworkManager.NETWORK_STAT_COMMUNICATION)
+		if (this.listen == 0)
 		{
 			String info = "Communication connection from " + addr.getAddress().getHostAddress() + ":" + addr.getPort()
 				+ " at " + conn.socket.getLocalPort();
 			CrossNet.LOG.info(info);
+			conn.network.communication = conn;
+			if (conn.network.type == CrossNet.SIDE_CLIENT)
+			{
+				for (Map.Entry<Integer, ConnectionMapping> entry : NetworkManager.MAPPING.entrySet())
+				{
+					int listenPort = entry.getKey();
+					CrossNet.LOG.info("Communication listen " + listenPort);
+					ConnectionWaiting waiting = new ConnectionWaiting(conn.network, listenPort, entry.getValue().timeout);
+					conn.network.waiting[listenPort] = waiting;
+					conn.network.synchronize.offer(waiting);
+					Connection connl = new Connection();
+					connl.LP = (short) listenPort;
+					try
+					{
+						conn.network.communication.send(connl);
+					}
+					catch (IOException e)
+					{
+						CrossNet.LOG.warning("Communicate connection failed");
+						CrossNet.LOG.log(Level.WARNING, null, e);
+					}
+				}
+			}
 		}
 		else
 		{

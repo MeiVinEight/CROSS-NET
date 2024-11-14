@@ -18,6 +18,7 @@ public class ConnectionMonitor implements Runnable
 	{
 		this.network = network;
 		this.server = server;
+		CrossNet.LOG.info("Communication listen " + this.server.getLocalPort());
 	}
 
 	@Override
@@ -40,6 +41,18 @@ public class ConnectionMonitor implements Runnable
 				}
 			}
 			if (socket == null) continue;
+			if (this.network.communication == null)
+			{
+				try
+				{
+					socket.close();
+				}
+				catch (IOException e)
+				{
+					CrossNet.LOG.log(Level.WARNING, null, e);
+				}
+				continue;
+			}
 
 
 			int lp = socket.getLocalPort();

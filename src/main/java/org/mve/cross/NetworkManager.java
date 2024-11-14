@@ -8,18 +8,12 @@ import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionMonitor;
 import org.mve.cross.connection.ConnectionWaiting;
-import org.mve.cross.pack.Connection;
-import org.mve.cross.pack.Datapack;
-import org.mve.cross.pack.Handshake;
 import org.mve.cross.text.JSON;
 import org.mve.cross.transfer.TransferManager;
 import org.mve.cross.transfer.TransferMonitor;
 import org.mve.invoke.common.JavaVM;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -32,10 +26,12 @@ public class NetworkManager
 	private static final String KEY_MAPPING_LISTEN_PORT = "listen-port";
 	private static final String KEY_MAPPING_LOCALE_PORT = "locale-port";
 	private static final String KEY_MAPPING_TIMEOUT = "timeout";
-	private static final Map<Integer, ConnectionMapping> MAPPING = new HashMap<>();
+	private static final String KEY_COMMUNICATION = "communication";
+	private static final String KEY_COMMUNICATION_CONNECT = "connect";
+	public static final Map<Integer, ConnectionMapping> MAPPING = new HashMap<>();
 	public static final String SERVER_IP;
 	public static final int SERVER_PORT;
-	public static final int NETWORK_STAT_COMMUNICATION = 1;
+	public static final long COMMUNICATION_CONNECT;
 	public static final int NETWORK_STAT_RUNNING = 2;
 	public static final int NETWORK_STAT_STOPPED = 3;
 	public final int type;
@@ -53,7 +49,6 @@ public class NetworkManager
 	public NetworkManager(int type)
 	{
 		this.type = type;
-		this.status = NETWORK_STAT_COMMUNICATION;
 		try
 		{
 			if (this.type == CrossNet.SIDE_SERVER)
@@ -62,85 +57,16 @@ public class NetworkManager
 				ServerSocket remote = new ServerSocket(SERVER_PORT);
 				// this.transfer = new ServerSocket(SERVER_PORT);
 				// Create a connection with frp client
-				while (this.communication == null)
-				{
-					CrossNet.LOG.info("Waiting communication at " + SERVER_PORT);
-					this.communication = new ConnectionManager(this, remote.accept());
-					CrossNet.LOG.info("Handshake with " + this.communication.socket.getRemoteSocketAddress());
-					try
-					{
-						Handshake handshake = new Handshake(); // Communication handshake
-						this.communication.send(handshake);
-						Datapack datapack = this.communication.receive();
-						if (!(datapack instanceof Handshake))
-						{
-							this.communication.close();
-							this.communication = null;
-						}
-						datapack.accept(this.communication);
-						if (this.communication.socket.isClosed()) this.communication = null;
-					}
-					catch (Throwable t)
-					{
-						CrossNet.LOG.log(Level.WARNING, null, t);
-						this.communication = null;
-					}
-				}
 				this.status = NETWORK_STAT_RUNNING;
 				this.transfer = new TransferMonitor(this, remote);
-				new Thread(new Communication(communication)).start();
+				new Thread(new Communication(this)).start();
 				new Thread(this.transfer).start();
 			}
 			else // CrossNet.SIDE_CLIENT
 			{
 				this.transfer = null;
-				InetAddress addr = InetAddress.getByName(SERVER_IP);
-				CrossNet.LOG.info("Communication to " + addr + ":" + SERVER_PORT);
-				this.communication = new ConnectionManager(this, new Socket(addr, SERVER_PORT));
-				CrossNet.LOG.info("Communication handshake");
-				try
-				{
-					Handshake handshake = new Handshake();
-					this.communication.send(handshake);
-					Datapack datapack = this.communication.receive();
-					if (!(datapack instanceof Handshake))
-					{
-						this.communication.close();
-						this.communication = null;
-					}
-					else
-					{
-						datapack.accept(this.communication);
-						if (this.communication.socket.isClosed())
-						{
-							this.communication = null;
-						}
-					}
-					if (this.communication == null)
-					{
-						throw new IOException("Connection refused");
-					}
-				}
-				catch (IOException e)
-				{
-					CrossNet.LOG.severe("Handshake failed");
-					CrossNet.LOG.log(Level.SEVERE, null, e);
-					this.close();
-					return;
-				}
 				this.status = NETWORK_STAT_RUNNING;
 				new Thread(new Communication(this)).start();
-				for (Map.Entry<Integer, ConnectionMapping> entry : NetworkManager.MAPPING.entrySet())
-				{
-					int listenPort = entry.getKey();
-					CrossNet.LOG.info("Communication listen " + listenPort);
-					ConnectionWaiting waiting = new ConnectionWaiting(this, listenPort, entry.getValue().timeout);
-					this.waiting[listenPort] = waiting;
-					this.synchronize.offer(waiting);
-					Connection conn = new Connection();
-					conn.LP = (short) listenPort;
-					this.communication.send(conn);
-				}
 			}
 		}
 		catch (Throwable t)
@@ -252,6 +178,7 @@ public class NetworkManager
 			}
 			SERVER_IP = CrossNet.PROPERTIES.get(KEY_SERVER_IP).getAsString();
 			SERVER_PORT = CrossNet.PROPERTIES.get(KEY_SERVER_PORT).getAsInt();
+			COMMUNICATION_CONNECT = CrossNet.PROPERTIES.get(KEY_COMMUNICATION).getAsJsonObject().get(KEY_COMMUNICATION_CONNECT).getAsLong();
 		}
 		catch (Throwable e)
 		{

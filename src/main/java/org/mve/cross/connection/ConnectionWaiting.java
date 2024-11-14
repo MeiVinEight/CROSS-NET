@@ -52,7 +52,7 @@ public class ConnectionWaiting extends Synchronized
 				int sp = NetworkManager.SERVER_PORT;
 				CrossNet.LOG.severe("Cannot connect to FRP " + sip + ":" + sp);
 				CrossNet.LOG.log(Level.SEVERE, null, e);
-				this.connection.offer(client);
+				this.offer(client);
 				return;
 			}
 
@@ -71,7 +71,7 @@ public class ConnectionWaiting extends Synchronized
 				{
 					CrossNet.LOG.warning("Handshake required: " + server.getRemoteSocketAddress());
 					cm.close();
-					this.connection.offer(client);
+					this.offer(client);
 					return;
 				}
 				pack.accept(cm);

@@ -27,15 +27,16 @@ public class Connection extends Datapack
 		NetworkManager network = conn.network;
 		if (network.type == CrossNet.SIDE_SERVER)
 		{
-			CrossNet.LOG.info("Communication listen " + this.LP);
 			int port = (this.LP & 0xFFFF);
 			try
 			{
 				int timeout = NetworkManager.timeout(port);
-				ServerSocket ss = new ServerSocket(port);
-				network.server[port] = new ConnectionMonitor(conn.network, ss);
-				network.waiting[port] = new ConnectionWaiting(network, port, timeout);
-				new Thread(network.server[port]).start();
+				if (network.waiting[port] == null) network.waiting[port] = new ConnectionWaiting(network, port, timeout);
+				if (network.server[port] == null)
+				{
+					network.server[port] = new ConnectionMonitor(conn.network, new ServerSocket(port));
+					new Thread(network.server[port]).start();
+				}
 			}
 			catch (IOException e)
 			{
