@@ -31,9 +31,10 @@ public class Connection extends Datapack
 			int port = (this.LP & 0xFFFF);
 			try
 			{
+				int timeout = NetworkManager.timeout(port);
 				ServerSocket ss = new ServerSocket(port);
 				network.server[port] = new ConnectionMonitor(conn.network, ss);
-				network.waiting[port] = new ConnectionWaiting(network, port);
+				network.waiting[port] = new ConnectionWaiting(network, port, timeout);
 				new Thread(network.server[port]).start();
 			}
 			catch (IOException e)

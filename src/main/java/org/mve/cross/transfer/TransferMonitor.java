@@ -32,7 +32,7 @@ public class TransferMonitor implements Runnable
 			{
 				CrossNet.LOG.info("Waiting for transfer connection at " + this.server.getLocalPort());
 				Socket socket = this.server.accept();
-				socket.setSoTimeout(5000);
+				// socket.setSoTimeout(5000);
 				ConnectionManager cm = new ConnectionManager(this.network, socket);
 				try
 				{
@@ -85,6 +85,5 @@ public class TransferMonitor implements Runnable
 			CrossNet.LOG.severe("Close transfer monitor");
 			CrossNet.LOG.log(Level.SEVERE, null, e);
 		}
-
 	}
 }

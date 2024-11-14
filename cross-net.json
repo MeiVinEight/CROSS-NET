@@ -6,7 +6,8 @@
 	[
 		{
 			"listen-port": 8081,
-			"locale-port": 8080
+			"locale-port": 8080,
+			"timeout": 2000
 		}
 	]
 }

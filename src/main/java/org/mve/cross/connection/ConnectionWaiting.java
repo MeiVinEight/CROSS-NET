@@ -18,12 +18,14 @@ public class ConnectionWaiting extends Synchronized
 {
 	private final NetworkManager network;
 	private final int RP;
+	private final int timeout;
 	private final Queue<Socket> connection = new ConcurrentLinkedQueue<>();
 
-	public ConnectionWaiting(NetworkManager network, int rp)
+	public ConnectionWaiting(NetworkManager network, int rp, int timeout)
 	{
 		this.network = network;
 		this.RP = rp;
+		this.timeout = timeout;
 	}
 
 	@Override
@@ -40,9 +42,9 @@ public class ConnectionWaiting extends Synchronized
 				String sip = NetworkManager.SERVER_IP;
 				int sp = NetworkManager.SERVER_PORT;
 				server = new Socket(/*NetworkManager.SERVER_IP, NetworkManager.SERVER_PORT*/);
-				server.connect(new InetSocketAddress(sip, sp), 5000); // 5s timeout
+				server.connect(new InetSocketAddress(sip, sp), this.timeout); // 5s timeout
 				CrossNet.LOG.info("Connection to FRP " + sip + ":" + sp + " at " + server.getLocalPort());
-				server.setSoTimeout(5000);
+				server.setSoTimeout(this.timeout);
 			}
 			catch (IOException e)
 			{
@@ -73,6 +75,9 @@ public class ConnectionWaiting extends Synchronized
 					return;
 				}
 				pack.accept(cm);
+				// Default no timeout at transfer
+				server.setSoTimeout(0);
+
 			}
 			catch (IOException e)
 			{

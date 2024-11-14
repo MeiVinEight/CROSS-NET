@@ -1,14 +1,17 @@
 package org.mve.cross;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.mve.cross.concurrent.SynchronizeNET;
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionMonitor;
 import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.pack.Connection;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
+import org.mve.cross.text.JSON;
 import org.mve.cross.transfer.TransferManager;
 import org.mve.cross.transfer.TransferMonitor;
 import org.mve.invoke.common.JavaVM;
@@ -28,7 +31,8 @@ public class NetworkManager
 	private static final String KEY_MAPPING = "mapping";
 	private static final String KEY_MAPPING_LISTEN_PORT = "listen-port";
 	private static final String KEY_MAPPING_LOCALE_PORT = "locale-port";
-	private static final Map<Integer, Integer> MAPPING = new HashMap<>();
+	private static final String KEY_MAPPING_TIMEOUT = "timeout";
+	private static final Map<Integer, ConnectionMapping> MAPPING = new HashMap<>();
 	public static final String SERVER_IP;
 	public static final int SERVER_PORT;
 	public static final int NETWORK_STAT_COMMUNICATION = 1;
@@ -125,12 +129,12 @@ public class NetworkManager
 					return;
 				}
 				this.status = NETWORK_STAT_RUNNING;
-				new Thread(new Communication(communication)).start();
-				for (Map.Entry<Integer, Integer> entry : NetworkManager.MAPPING.entrySet())
+				new Thread(new Communication(this)).start();
+				for (Map.Entry<Integer, ConnectionMapping> entry : NetworkManager.MAPPING.entrySet())
 				{
 					int listenPort = entry.getKey();
 					CrossNet.LOG.info("Communication listen " + listenPort);
-					ConnectionWaiting waiting = new ConnectionWaiting(this, listenPort);
+					ConnectionWaiting waiting = new ConnectionWaiting(this, listenPort, entry.getValue().timeout);
 					this.waiting[listenPort] = waiting;
 					this.synchronize.offer(waiting);
 					Connection conn = new Connection();
@@ -184,9 +188,16 @@ public class NetworkManager
 
 	public static int mapping(int port)
 	{
-		Integer local = MAPPING.get(port);
-		if (local == null) return 0;
-		return local;
+		ConnectionMapping mapping = MAPPING.get(port);
+		if (mapping == null) return 0;
+		return mapping.LP;
+	}
+
+	public static int timeout(int port)
+	{
+		ConnectionMapping mapping = MAPPING.get(port);
+		if (mapping == null) return 0;
+		return mapping.timeout;
 	}
 
 	public TransferManager connection(int rp, int lp)
@@ -225,14 +236,19 @@ public class NetworkManager
 	{
 		try
 		{
-			JsonArray array = CrossNet.PROPERTIES.get(KEY_MAPPING).getAsJsonArray();
-			for (int i = 0; i < array.size(); i++)
+			JsonElement mappingObject = CrossNet.PROPERTIES.get(KEY_MAPPING);
+			if (mappingObject != null)
 			{
-				JsonObject object = array.get(i).getAsJsonObject();
-				int listen = Integer.parseInt(object.get(KEY_MAPPING_LISTEN_PORT).getAsString());
-				int locale = Integer.parseInt(object.get(KEY_MAPPING_LOCALE_PORT).getAsString());
-				MAPPING.put(listen, locale);
-				CrossNet.LOG.config("Mapping " + listen + "(S) - " + locale + "(C)");
+				JsonArray array = CrossNet.PROPERTIES.get(KEY_MAPPING).getAsJsonArray();
+				for (int i = 0; i < array.size(); i++)
+				{
+					JsonObject object = array.get(i).getAsJsonObject();
+					int listen = Integer.parseInt(object.get(KEY_MAPPING_LISTEN_PORT).getAsString());
+					int locale = Integer.parseInt(object.get(KEY_MAPPING_LOCALE_PORT).getAsString());
+					int timeout = JSON.as(object.get(KEY_MAPPING_TIMEOUT), int.class, 0);
+					MAPPING.put(listen, new ConnectionMapping(listen, locale, timeout));
+					CrossNet.LOG.config("Mapping " + listen + "(S) - " + locale + "(C)");
+				}
 			}
 			SERVER_IP = CrossNet.PROPERTIES.get(KEY_SERVER_IP).getAsString();
 			SERVER_PORT = CrossNet.PROPERTIES.get(KEY_SERVER_PORT).getAsInt();
