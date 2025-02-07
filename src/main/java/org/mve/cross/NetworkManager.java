@@ -31,7 +31,7 @@ public class NetworkManager
 	public static final Map<Integer, ConnectionMapping> MAPPING = new HashMap<>();
 	public static final String SERVER_IP;
 	public static final int SERVER_PORT;
-	public static final long COMMUNICATION_CONNECT;
+	public static final int COMMUNICATION_CONNECT;
 	public static final int NETWORK_STAT_RUNNING = 2;
 	public static final int NETWORK_STAT_STOPPED = 3;
 	public final int type;
@@ -178,7 +178,7 @@ public class NetworkManager
 			}
 			SERVER_IP = CrossNet.PROPERTIES.get(KEY_SERVER_IP).getAsString();
 			SERVER_PORT = CrossNet.PROPERTIES.get(KEY_SERVER_PORT).getAsInt();
-			COMMUNICATION_CONNECT = CrossNet.PROPERTIES.get(KEY_COMMUNICATION).getAsJsonObject().get(KEY_COMMUNICATION_CONNECT).getAsLong();
+			COMMUNICATION_CONNECT = CrossNet.PROPERTIES.get(KEY_COMMUNICATION).getAsJsonObject().get(KEY_COMMUNICATION_CONNECT).getAsInt();
 		}
 		catch (Throwable e)
 		{

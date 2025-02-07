@@ -28,7 +28,7 @@ public class Communication implements Runnable
 			if (this.network.communication == null)
 			{
 				// Waiting 5s
-				LockSupport.parkNanos(NetworkManager.COMMUNICATION_CONNECT * 1_000_000);
+				LockSupport.parkNanos(NetworkManager.COMMUNICATION_CONNECT * 1_000_000L);
 				if (this.network.type == CrossNet.SIDE_CLIENT)
 				{
 					try
@@ -37,6 +37,7 @@ public class Communication implements Runnable
 						CrossNet.LOG.info("Communication to " + addr + ":" + NetworkManager.SERVER_PORT);
 						ConnectionManager conn = new ConnectionManager(this.network, new Socket(addr, NetworkManager.SERVER_PORT));
 						CrossNet.LOG.info("Communication handshake");
+						conn.socket.setSoTimeout(NetworkManager.COMMUNICATION_CONNECT);
 						Handshake handshake = new Handshake();
 						conn.send(handshake);
 						Datapack datapack = conn.receive();
