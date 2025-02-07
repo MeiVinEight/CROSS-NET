@@ -15,7 +15,7 @@ public class ProtocolManager
 
 	static
 	{
-		CONSTRUCTOR = (ConstructorAccessor<? extends Datapack>[]) new ConstructorAccessor<?>[4];
+		CONSTRUCTOR = (ConstructorAccessor<? extends Datapack>[]) new ConstructorAccessor<?>[3];
 		CONSTRUCTOR[Handshake.ID] = ReflectionFactory.access(Handshake.class, MethodType.methodType(void.class));
 		CONSTRUCTOR[Connection.ID] = ReflectionFactory.access(Connection.class, MethodType.methodType(void.class));
 		CONSTRUCTOR[Transfer.ID] = ReflectionFactory.access(Transfer.class, MethodType.methodType(void.class));

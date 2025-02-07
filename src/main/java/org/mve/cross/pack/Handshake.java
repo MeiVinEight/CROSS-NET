@@ -11,13 +11,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
 public class Handshake extends Datapack
 {
-	public static final int ID = 0x01; // HANDSHAKE
+	public static final int ID = 0x00; // HANDSHAKE
 	// Random generated uuid
 	public static final UUID SIGNATURE = new UUID(-740609665978645947L, -8246978237028082185L);
 
@@ -41,6 +42,15 @@ public class Handshake extends Datapack
 			return;
 		}
 		// TODO Next generation
+		try
+		{
+			conn.socket.setSoTimeout(0);
+		}
+		catch (SocketException e)
+		{
+			CrossNet.LOG.warning("Handshake failed");
+			CrossNet.LOG.log(Level.WARNING, null, e);
+		}
 		InetSocketAddress addr = (InetSocketAddress) conn.socket.getRemoteSocketAddress();
 		if (this.listen == 0)
 		{

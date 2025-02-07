@@ -9,7 +9,7 @@ import java.io.OutputStream;
 
 public class Transfer extends Datapack
 {
-	public static final int ID = 0x03;
+	public static final int ID = 0x02;
 	public byte[] payload;
 
 	@Override

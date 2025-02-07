@@ -16,7 +16,7 @@ import java.util.logging.Level;
 
 public class Connection extends Datapack
 {
-	public static final int ID = 0x02;
+	public static final int ID = 0x01;
 
 	public short LP; // Local  port
 
