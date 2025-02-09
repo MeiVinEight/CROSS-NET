@@ -29,17 +29,17 @@ public class Communication implements Runnable
 			if (this.network.communication == null)
 			{
 				// Waiting 5s
-				LockSupport.parkNanos(NetworkManager.COMMUNICATION_CONNECT * 1_000_000L);
+				LockSupport.parkNanos(Configuration.COMMUNICATION_CONNECT * 1_000_000L);
 				if (this.network.type == CrossNet.SIDE_CLIENT)
 				{
 					SocketChannel channel = null;
 					try
 					{
-						InetAddress addr = InetAddress.getByName(NetworkManager.SERVER_IP);
-						CrossNet.LOG.info("Communication to " + addr + ":" + NetworkManager.SERVER_PORT);
+						InetAddress addr = InetAddress.getByName(Configuration.SERVER_ADDRESS);
+						CrossNet.LOG.info("Communication to " + addr + ":" + Configuration.SERVER_PORT);
 						channel = SocketChannel.open();
 						channel.configureBlocking(false);
-						channel.connect(new InetSocketAddress(addr, NetworkManager.SERVER_PORT));
+						channel.connect(new InetSocketAddress(addr, Configuration.SERVER_PORT));
 						while (!channel.finishConnect()) Thread.yield();
 						ConnectionManager conn = new ConnectionManager(this.network, channel);
 						CrossNet.LOG.info("Communication handshake");

@@ -1,38 +1,19 @@
 package org.mve.cross;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import org.mve.cross.concurrent.SynchronizeNET;
 import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionMonitor;
 import org.mve.cross.connection.ConnectionWaiting;
-import org.mve.cross.text.JSON;
 import org.mve.cross.transfer.TransferManager;
 import org.mve.cross.transfer.TransferMonitor;
-import org.mve.invoke.common.JavaVM;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 
 public class NetworkManager
 {
-	private static final String KEY_SERVER_IP = "server-ip";
-	private static final String KEY_SERVER_PORT = "server-port";
-	private static final String KEY_MAPPING = "mapping";
-	private static final String KEY_MAPPING_LISTEN_PORT = "listen-port";
-	private static final String KEY_MAPPING_LOCALE_PORT = "locale-port";
-	private static final String KEY_MAPPING_TIMEOUT = "timeout";
-	private static final String KEY_COMMUNICATION = "communication";
-	private static final String KEY_COMMUNICATION_CONNECT = "connect";
-	public static final Map<Integer, ConnectionMapping> MAPPING = new HashMap<>();
-	public static final String SERVER_IP;
-	public static final int SERVER_PORT;
-	public static final int COMMUNICATION_CONNECT;
 	public static final int NETWORK_STAT_RUNNING = 2;
 	public static final int NETWORK_STAT_STOPPED = 3;
 	public final int type;
@@ -58,10 +39,10 @@ public class NetworkManager
 				// ServerSocket remote = new ServerSocket(SERVER_PORT);
 				ServerSocketChannel remote = ServerSocketChannel.open();
 				// remote.configureBlocking(false);
-				remote.bind(new InetSocketAddress(SERVER_PORT));
+				remote.bind(new InetSocketAddress(Configuration.SERVER_PORT));
 				// this.transfer = new ServerSocket(SERVER_PORT);
 				// Create a connection with frp client
-				this.status = NETWORK_STAT_RUNNING;
+				this.status = NetworkManager.NETWORK_STAT_RUNNING;
 				this.transfer = new TransferMonitor(this, remote);
 				new Thread(new Communication(this)).start();
 				new Thread(this.transfer).start();
@@ -69,7 +50,7 @@ public class NetworkManager
 			else // CrossNet.SIDE_CLIENT
 			{
 				this.transfer = null;
-				this.status = NETWORK_STAT_RUNNING;
+				this.status = NetworkManager.NETWORK_STAT_RUNNING;
 				new Thread(new Communication(this)).start();
 			}
 		}
@@ -118,14 +99,14 @@ public class NetworkManager
 
 	public static int mapping(int port)
 	{
-		ConnectionMapping mapping = MAPPING.get(port);
+		ConnectionMapping mapping = Configuration.MAPPING.get(port);
 		if (mapping == null) return 0;
 		return mapping.LP;
 	}
 
 	public static int timeout(int port)
 	{
-		ConnectionMapping mapping = MAPPING.get(port);
+		ConnectionMapping mapping = Configuration.MAPPING.get(port);
 		if (mapping == null) return 0;
 		return mapping.timeout;
 	}
@@ -160,36 +141,5 @@ public class NetworkManager
 		if (s2[idx2] == null) s2[idx2] = new TransferManager[256];
 		TransferManager[] s3 = s2[idx2];
 		s3[idx3] = obj;
-	}
-
-	static
-	{
-		try
-		{
-			JsonElement mappingObject = CrossNet.PROPERTIES.get(KEY_MAPPING);
-			if (mappingObject != null)
-			{
-				JsonArray array = CrossNet.PROPERTIES.get(KEY_MAPPING).getAsJsonArray();
-				for (int i = 0; i < array.size(); i++)
-				{
-					JsonObject object = array.get(i).getAsJsonObject();
-					int listen = Integer.parseInt(object.get(KEY_MAPPING_LISTEN_PORT).getAsString());
-					int locale = Integer.parseInt(object.get(KEY_MAPPING_LOCALE_PORT).getAsString());
-					int timeout = JSON.as(object.get(KEY_MAPPING_TIMEOUT), int.class, 0);
-					MAPPING.put(listen, new ConnectionMapping(listen, locale, timeout));
-					CrossNet.LOG.config("Mapping " + listen + "(S) - " + locale + "(C)");
-				}
-			}
-			SERVER_IP = CrossNet.PROPERTIES.get(KEY_SERVER_IP).getAsString();
-			SERVER_PORT = CrossNet.PROPERTIES.get(KEY_SERVER_PORT).getAsInt();
-			COMMUNICATION_CONNECT = CrossNet.PROPERTIES.get(KEY_COMMUNICATION).getAsJsonObject().get(KEY_COMMUNICATION_CONNECT).getAsInt();
-		}
-		catch (Throwable e)
-		{
-			CrossNet.LOG.log(Level.SEVERE, "Couldn't read properties file");
-			CrossNet.LOG.log(Level.SEVERE, null, e);
-			JavaVM.exception(e);
-			throw new RuntimeException(e);
-		}
 	}
 }

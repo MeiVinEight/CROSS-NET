@@ -1,5 +1,6 @@
 package org.mve.cross.connection;
 
+import org.mve.cross.Configuration;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.concurrent.Synchronized;
@@ -39,8 +40,8 @@ public class ConnectionWaiting extends Synchronized
 			CrossNet.LOG.info("Connection waiting " + this.RP + " for " + client.socket().getRemoteSocketAddress());
 			try
 			{
-				String sip = NetworkManager.SERVER_IP;
-				int sp = NetworkManager.SERVER_PORT;
+				String sip = Configuration.SERVER_ADDRESS;
+				int sp = Configuration.SERVER_PORT;
 				// server = new Socket(/*NetworkManager.SERVER_IP, NetworkManager.SERVER_PORT*/);
 				server = SocketChannel.open();
 				server.configureBlocking(false);
@@ -50,8 +51,8 @@ public class ConnectionWaiting extends Synchronized
 			}
 			catch (IOException e)
 			{
-				String sip = NetworkManager.SERVER_IP;
-				int sp = NetworkManager.SERVER_PORT;
+				String sip = Configuration.SERVER_ADDRESS;
+				int sp = Configuration.SERVER_PORT;
 				CrossNet.LOG.severe("Cannot connect to FRP " + sip + ":" + sp);
 				CrossNet.LOG.log(Level.SEVERE, null, e);
 				this.offer(client);

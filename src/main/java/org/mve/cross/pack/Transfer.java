@@ -1,5 +1,6 @@
 package org.mve.cross.pack;
 
+import org.mve.cross.Configuration;
 import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.Serialization;
 
@@ -10,20 +11,19 @@ import java.nio.channels.WritableByteChannel;
 
 public class Transfer extends Datapack
 {
-	public static final int DEFAULT_BUFFER_SIZE = 4096;
 	public static final int ID = 0x02;
 	public byte[] payload;
 
 	@Override
 	public void read(ReadableByteChannel in) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(Transfer.DEFAULT_BUFFER_SIZE);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.DEFAULT_BUFFER_SIZE);
 		buffer.limit(4);
 		Serialization.transfer(in, buffer);
 		buffer.flip();
 		int length = buffer.getInt();
 
-		if (length <= Transfer.DEFAULT_BUFFER_SIZE) buffer.clear();
+		if (length <= Configuration.DEFAULT_BUFFER_SIZE) buffer.clear();
 		else buffer = ByteBuffer.allocateDirect(length);
 		buffer.limit(length);
 

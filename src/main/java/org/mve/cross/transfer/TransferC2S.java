@@ -1,5 +1,6 @@
 package org.mve.cross.transfer;
 
+import org.mve.cross.Configuration;
 import org.mve.cross.CrossNet;
 import org.mve.cross.pack.Transfer;
 
@@ -29,7 +30,7 @@ public class TransferC2S implements Runnable
 			}
 			while (this.transfer.running())
 			{
-				ByteBuffer buffer = ByteBuffer.allocateDirect(Transfer.DEFAULT_BUFFER_SIZE);
+				ByteBuffer buffer = ByteBuffer.allocateDirect(Configuration.DEFAULT_BUFFER_SIZE);
 				int read = this.transfer.socket.read(buffer);
 				if (read < 0)
 				{
