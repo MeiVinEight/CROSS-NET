@@ -1,10 +1,13 @@
 package org.mve.cross.transfer;
 
 import org.mve.cross.CrossNet;
+import org.mve.cross.Serialization;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Transfer;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 
 public class TransferS2C implements Runnable
 {
@@ -22,17 +25,19 @@ public class TransferS2C implements Runnable
 		try
 		{
 			{
-				String info = "Transfer " + this.transfer.connection.socket.getRemoteSocketAddress() + " -> " +
-					this.transfer.socket.getRemoteSocketAddress();
+				String info = "Transfer " + this.transfer.connection.address + " -> " +
+					this.transfer.address + " S2C";
 				CrossNet.LOG.info(info);
 			}
 			while (this.transfer.running())
 			{
 				Datapack pack = this.transfer.connection.receive();
-				if (pack instanceof Transfer)
+				if (pack instanceof Transfer transfer)
 				{
-					Transfer transfer = (Transfer) pack;
-					this.transfer.socket.getOutputStream().write(transfer.payload);
+					ByteBuffer buffer = ByteBuffer.allocateDirect(transfer.payload.length);
+					buffer.put(transfer.payload);
+					buffer.flip();
+					Serialization.transfer((WritableByteChannel) this.transfer.socket, buffer);
 				}
 				else
 				{

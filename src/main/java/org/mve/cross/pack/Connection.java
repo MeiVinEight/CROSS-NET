@@ -8,17 +8,19 @@ import org.mve.cross.Serialization;
 import org.mve.cross.connection.ConnectionWaiting;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.logging.Level;
 
 public class Connection extends Datapack
 {
 	public static final int ID = 0x01;
 
-	public short LP; // Local  port
+	public short LP; // Local port
 
 	@Override
 	public void accept(ConnectionManager conn)
@@ -27,6 +29,7 @@ public class Connection extends Datapack
 		NetworkManager network = conn.network;
 		if (network.type == CrossNet.SIDE_SERVER)
 		{
+			// Create server listen on LP
 			int port = (this.LP & 0xFFFF);
 			try
 			{
@@ -34,7 +37,10 @@ public class Connection extends Datapack
 				if (network.waiting[port] == null) network.waiting[port] = new ConnectionWaiting(network, port, timeout);
 				if (network.server[port] == null)
 				{
-					network.server[port] = new ConnectionMonitor(conn.network, new ServerSocket(port));
+					ServerSocketChannel channel = ServerSocketChannel.open();
+					// channel.configureBlocking(false);
+					channel.bind(new InetSocketAddress(port));
+					network.server[port] = new ConnectionMonitor(conn.network, channel);
 					new Thread(network.server[port]).start();
 				}
 			}
@@ -45,14 +51,20 @@ public class Connection extends Datapack
 		}
 		else // SIDE_CLIENT
 		{
+			// A new connection accepted at LP on server
 			int localePort = NetworkManager.mapping(this.LP & 0xFFFF);
 			CrossNet.LOG.info("Connection at " + this.LP + ", create transfer connection to " + localePort);
-			Socket client; // Connection with FRP endpoint
+			SocketChannel client; // Connection with FRP endpoint
 			try
 			{
 				// TODO Use properties ip
-				client = new Socket("127.0.0.1", localePort);
-				CrossNet.LOG.info("Connection to endpoint 127.0.0.1:" + localePort + " at " + client.getLocalPort());
+				// client = new Socket("127.0.0.1", localePort);
+				client = SocketChannel.open();
+				client.configureBlocking(false);
+				client.connect(new InetSocketAddress(localePort));
+				while (!client.finishConnect()) Thread.yield();
+				int clp = client.socket().getLocalPort();
+				CrossNet.LOG.info("Connection to endpoint 127.0.0.1:" + localePort + " at " + clp);
 			}
 			catch (IOException e)
 			{
@@ -66,15 +78,21 @@ public class Connection extends Datapack
 	}
 
 	@Override
-	public void read(InputStream in) throws IOException
+	public void read(ReadableByteChannel in) throws IOException
 	{
-		this.LP = Serialization.R2(in);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(2);
+		Serialization.transfer(in, buffer);
+		buffer.flip();
+		this.LP = buffer.getShort();
 	}
 
 	@Override
-	public void write(OutputStream out) throws IOException
+	public void write(WritableByteChannel out) throws IOException
 	{
-		Serialization.W2(out, this.LP);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(2);
+		buffer.putShort(this.LP);
+		buffer.flip();
+		Serialization.transfer(out, buffer);
 	}
 
 	@Override

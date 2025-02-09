@@ -6,7 +6,8 @@ import org.mve.cross.pack.Handshake;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 
@@ -31,13 +32,17 @@ public class Communication implements Runnable
 				LockSupport.parkNanos(NetworkManager.COMMUNICATION_CONNECT * 1_000_000L);
 				if (this.network.type == CrossNet.SIDE_CLIENT)
 				{
+					SocketChannel channel = null;
 					try
 					{
 						InetAddress addr = InetAddress.getByName(NetworkManager.SERVER_IP);
 						CrossNet.LOG.info("Communication to " + addr + ":" + NetworkManager.SERVER_PORT);
-						ConnectionManager conn = new ConnectionManager(this.network, new Socket(addr, NetworkManager.SERVER_PORT));
+						channel = SocketChannel.open();
+						channel.configureBlocking(false);
+						channel.connect(new InetSocketAddress(addr, NetworkManager.SERVER_PORT));
+						while (!channel.finishConnect()) Thread.yield();
+						ConnectionManager conn = new ConnectionManager(this.network, channel);
 						CrossNet.LOG.info("Communication handshake");
-						conn.socket.setSoTimeout(NetworkManager.COMMUNICATION_CONNECT);
 						Handshake handshake = new Handshake();
 						conn.send(handshake);
 						Datapack datapack = conn.receive();
@@ -48,7 +53,7 @@ public class Communication implements Runnable
 						else
 						{
 							datapack.accept(conn);
-							if (conn.socket.isClosed())
+							if (!conn.socket.isConnected())
 							{
 								this.network.communication = null;
 							}
@@ -62,6 +67,18 @@ public class Communication implements Runnable
 					{
 						CrossNet.LOG.warning("Communication failed");
 						CrossNet.LOG.log(Level.WARNING, null, e);
+						if (channel != null && channel.isConnected())
+						{
+							try
+							{
+								channel.close();
+							}
+							catch (IOException ex)
+							{
+								CrossNet.LOG.warning("Cannot close channel");
+								CrossNet.LOG.log(Level.WARNING, null, ex);
+							}
+						}
 					}
 				}
 				Thread.yield();
@@ -74,7 +91,7 @@ public class Communication implements Runnable
 			}
 			catch (IOException e)
 			{
-				CrossNet.LOG.warning("Communication " + this.network.communication.socket.getRemoteSocketAddress() + " closed");
+				CrossNet.LOG.warning("Communication " + this.network.communication.address + " closed");
 				CrossNet.LOG.log(Level.WARNING, null, e);
 				this.network.communication.close();
 				this.network.communication = null;

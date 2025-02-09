@@ -7,32 +7,34 @@ import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 
 public class TransferMonitor implements Runnable
 {
 	public final NetworkManager network;
-	public final ServerSocket server;
+	public final ServerSocketChannel server;
+	public final int ID;
 
-	public TransferMonitor(NetworkManager network, ServerSocket server)
+	public TransferMonitor(NetworkManager network, ServerSocketChannel server)
 	{
 		this.network = network;
 		this.server = server;
+		this.ID = server.socket().getLocalPort();
 	}
 
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("Transfer-" + this.server.getLocalPort());
+		Thread.currentThread().setName("Transfer-" + this.ID);
 		try
 		{
 			while (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
 			{
-				CrossNet.LOG.info("Waiting for transfer connection at " + this.server.getLocalPort());
-				Socket socket = this.server.accept();
-				socket.setSoTimeout(NetworkManager.COMMUNICATION_CONNECT);
+				CrossNet.LOG.info("Waiting for transfer connection at " + this.ID);
+				SocketChannel socket = server.accept();
+				socket.configureBlocking(false);
 				ConnectionManager cm = new ConnectionManager(this.network, socket);
 				try
 				{
@@ -40,7 +42,7 @@ public class TransferMonitor implements Runnable
 					Datapack pack = cm.receive();
 					if (!(pack instanceof Handshake))
 					{
-						CrossNet.LOG.warning("Handshake required: " + socket.getRemoteSocketAddress());
+						CrossNet.LOG.warning("Handshake required: " + socket.getRemoteAddress());
 						cm.close();
 						continue;
 					}
@@ -48,9 +50,9 @@ public class TransferMonitor implements Runnable
 					handshake.listen = ((Handshake) pack).listen;
 					cm.send(handshake);
 					pack.accept(cm);
-					if (cm.socket.isClosed())
+					if (cm.socket.socket().isClosed())
 					{
-						CrossNet.LOG.warning("Connection closed: " + socket.getRemoteSocketAddress());
+						CrossNet.LOG.warning("Connection closed: " + socket.getRemoteAddress());
 					}
 				}
 				catch (IOException e)

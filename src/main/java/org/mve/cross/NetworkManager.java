@@ -13,7 +13,8 @@ import org.mve.cross.transfer.TransferManager;
 import org.mve.cross.transfer.TransferMonitor;
 import org.mve.invoke.common.JavaVM;
 
-import java.net.ServerSocket;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -54,7 +55,10 @@ public class NetworkManager
 			if (this.type == CrossNet.SIDE_SERVER)
 			{
 				// Create remote listen server
-				ServerSocket remote = new ServerSocket(SERVER_PORT);
+				// ServerSocket remote = new ServerSocket(SERVER_PORT);
+				ServerSocketChannel remote = ServerSocketChannel.open();
+				// remote.configureBlocking(false);
+				remote.bind(new InetSocketAddress(SERVER_PORT));
 				// this.transfer = new ServerSocket(SERVER_PORT);
 				// Create a connection with frp client
 				this.status = NETWORK_STAT_RUNNING;

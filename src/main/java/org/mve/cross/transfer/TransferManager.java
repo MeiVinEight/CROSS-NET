@@ -4,37 +4,51 @@ import org.mve.cross.CrossNet;
 import org.mve.cross.connection.ConnectionManager;
 
 import java.io.IOException;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 
 public class TransferManager
 {
 	public final ConnectionManager connection;
-	public final Socket socket;
+	public final SocketChannel socket;
+	public final InetSocketAddress address;
+	private final int LP;
+	private final int RP;
 	public final Thread S2C;
 	public final Thread C2S;
 	private boolean running = true;
 
-	public TransferManager(ConnectionManager connection, Socket socket)
+	public TransferManager(ConnectionManager connection, SocketChannel socket)
 	{
 		this.connection = connection;
 		this.socket = socket;
+		this.address = (InetSocketAddress) this.socket.socket().getRemoteSocketAddress();
+		if (this.connection.network.type == CrossNet.SIDE_SERVER)
+		{
+			this.LP = this.socket.socket().getLocalPort();
+			this.RP = this.connection.address.getPort();
+		}
+		else
+		{
+			this.LP = this.socket.socket().getPort();
+			this.RP = this.connection.LP;
+		}
 		this.S2C = new Thread(new TransferS2C(this));
 		this.C2S = new Thread(new TransferC2S(this));
 		this.S2C.start();
 		this.C2S.start();
+
 	}
 
 	public int RP()
 	{
-		if (this.connection.network.type == CrossNet.SIDE_SERVER) return this.connection.socket.getPort();
-		else return this.connection.socket.getLocalPort();
+		return this.RP;
 	}
 
 	public int LP()
 	{
-		if (this.connection.network.type == CrossNet.SIDE_SERVER) return this.socket.getLocalPort();
-		else return this.socket.getPort();
+		return this.LP;
 	}
 
 	public boolean running()
@@ -49,7 +63,7 @@ public class TransferManager
 		this.connection.network.connection(this.RP(), this.LP(), null);
 		CrossNet.LOG.info(
 			"Transfer connection server " +
-			this.connection.socket.getRemoteSocketAddress() +
+			this.connection.address +
 			" closing"
 		);
 		this.connection.close();
@@ -57,7 +71,7 @@ public class TransferManager
 		{
 			CrossNet.LOG.info(
 				"Transfer connection client " +
-				this.socket.getRemoteSocketAddress() +
+				this.socket.getRemoteAddress() +
 				" closing"
 			);
 			this.socket.close();

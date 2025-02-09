@@ -5,33 +5,35 @@ import org.mve.cross.NetworkManager;
 import org.mve.cross.pack.Connection;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 
 public class ConnectionMonitor implements Runnable
 {
 	private final NetworkManager network;
-	private final ServerSocket server;
+	private final ServerSocketChannel server;
+	public final int ID;
 
-	public ConnectionMonitor(NetworkManager network, ServerSocket server)
+	public ConnectionMonitor(NetworkManager network, ServerSocketChannel server)
 	{
 		this.network = network;
 		this.server = server;
-		CrossNet.LOG.info("Communication listen " + this.server.getLocalPort());
+		this.ID = server.socket().getLocalPort();
+		CrossNet.LOG.info("Communication listen " + this.ID);
 	}
 
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("Connection-" + this.server.getLocalPort());
+		Thread.currentThread().setName("Connection-" + this.ID);
 		while (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
 		{
-			Socket socket = null;
+			CrossNet.LOG.info("Waiting for connection at " + this.ID);
+			SocketChannel socket = null;
 			try
 			{
-				CrossNet.LOG.info("Waiting for connection at " + this.server.getLocalPort());
-				socket = this.server.accept();
+				socket = server.accept();
 			}
 			catch (IOException e)
 			{
@@ -55,8 +57,8 @@ public class ConnectionMonitor implements Runnable
 			}
 
 
-			int lp = socket.getLocalPort();
-			CrossNet.LOG.info("Connection from " + socket.getRemoteSocketAddress() + " at " + lp);
+			int lp = socket.socket().getLocalPort();
+			CrossNet.LOG.info("Connection from " + socket.socket().getRemoteSocketAddress() + " at " + lp);
 			Connection conn = new Connection();
 			conn.LP = (short) lp;
 			try
@@ -77,13 +79,13 @@ public class ConnectionMonitor implements Runnable
 				}
 				continue;
 			}
-			this.network.waiting[this.server.getLocalPort()].offer(socket);
+			this.network.waiting[this.ID].offer(socket);
 		}
 	}
 
 	public void close()
 	{
-		CrossNet.LOG.info("Connection server " + this.server.getLocalPort() + " closing");
+		CrossNet.LOG.info("Connection server " + this.ID + " closing");
 		try
 		{
 			server.close();

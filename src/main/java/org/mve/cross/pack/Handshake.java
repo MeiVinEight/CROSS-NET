@@ -8,10 +8,10 @@ import org.mve.cross.NetworkManager;
 import org.mve.cross.Serialization;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -37,25 +37,16 @@ public class Handshake extends Datapack
 	{
 		if (!new UUID(this.most, this.least).equals(SIGNATURE))
 		{
-			CrossNet.LOG.warning("UNKNOWN CONNECTION: " + conn.socket.getRemoteSocketAddress());
+			CrossNet.LOG.warning("UNKNOWN CONNECTION: " + conn.socket.socket().getRemoteSocketAddress());
 			conn.close();
 			return;
 		}
 		// TODO Next generation
-		try
-		{
-			conn.socket.setSoTimeout(0);
-		}
-		catch (SocketException e)
-		{
-			CrossNet.LOG.warning("Handshake failed");
-			CrossNet.LOG.log(Level.WARNING, null, e);
-		}
-		InetSocketAddress addr = (InetSocketAddress) conn.socket.getRemoteSocketAddress();
+		InetSocketAddress addr = conn.address;
 		if (this.listen == 0)
 		{
 			String info = "Communication connection from " + addr.getAddress().getHostAddress() + ":" + addr.getPort()
-				+ " at " + conn.socket.getLocalPort();
+				+ " at " + conn.LP;
 			CrossNet.LOG.info(info);
 			conn.network.communication = conn;
 			if (conn.network.type == CrossNet.SIDE_CLIENT)
@@ -96,19 +87,25 @@ public class Handshake extends Datapack
 	}
 
 	@Override
-	public void read(InputStream in) throws IOException
+	public void read(ReadableByteChannel in) throws IOException
 	{
-		this.most = Serialization.R8(in);
-		this.least = Serialization.R8(in);
-		this.listen = Serialization.R2(in);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(18);
+		Serialization.transfer(in, buffer);
+		buffer.flip();
+		this.most = buffer.getLong();
+		this.least = buffer.getLong();
+		this.listen = buffer.getShort();
 	}
 
 	@Override
-	public void write(OutputStream out) throws IOException
+	public void write(WritableByteChannel out) throws IOException
 	{
-		Serialization.W8(out, this.most);
-		Serialization.W8(out, this.least);
-		Serialization.W2(out, this.listen);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(18);
+		buffer.putLong(this.most);
+		buffer.putLong(this.least);
+		buffer.putShort(this.listen);
+		buffer.flip();
+		Serialization.transfer(out, buffer);
 	}
 
 	@Override
