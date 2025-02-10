@@ -1,12 +1,12 @@
-package org.mve.cross.connection;
+package org.mve.cross;
 
-public class ConnectionMapping
+public class AddressMapping
 {
 	public final int RP;
 	public final int LP;
 	public final int timeout;
 
-	public ConnectionMapping(int rp, int lp, int timeout)
+	public AddressMapping(int rp, int lp, int timeout)
 	{
 		RP = rp;
 		LP = lp;

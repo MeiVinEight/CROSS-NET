@@ -3,7 +3,6 @@ package org.mve.cross;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.text.JSON;
 import org.mve.invoke.common.JavaVM;
 
@@ -21,7 +20,7 @@ public class Configuration
 	private static final String KEY_MAPPING_TIMEOUT = "timeout";
 	private static final String KEY_COMMUNICATION = "communication";
 	private static final String KEY_COMMUNICATION_CONNECT = "connect";
-	public static final Map<Integer, ConnectionMapping> MAPPING = new HashMap<>();
+	public static final Map<Integer, AddressMapping> MAPPING = new HashMap<>();
 	public static final String SERVER_ADDRESS;
 	public static final int SERVER_PORT;
 	public static final int COMMUNICATION_CONNECT;
@@ -43,7 +42,7 @@ public class Configuration
 					int listen = Integer.parseInt(object.get(KEY_MAPPING_LISTEN_PORT).getAsString());
 					int locale = Integer.parseInt(object.get(KEY_MAPPING_LOCALE_PORT).getAsString());
 					int timeout = JSON.as(object.get(KEY_MAPPING_TIMEOUT), int.class, 0);
-					MAPPING.put(listen, new ConnectionMapping(listen, locale, timeout));
+					MAPPING.put(listen, new AddressMapping(listen, locale, timeout));
 					CrossNet.LOG.config("Mapping " + listen + "(S) - " + locale + "(C)");
 				}
 			}

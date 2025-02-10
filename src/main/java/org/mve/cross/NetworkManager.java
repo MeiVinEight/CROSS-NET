@@ -2,7 +2,6 @@ package org.mve.cross;
 
 import org.mve.cross.concurrent.SynchronizeNET;
 import org.mve.cross.connection.ConnectionManager;
-import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionMonitor;
 import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.transfer.TransferManager;
@@ -99,14 +98,14 @@ public class NetworkManager
 
 	public static int mapping(int port)
 	{
-		ConnectionMapping mapping = Configuration.MAPPING.get(port);
+		AddressMapping mapping = Configuration.MAPPING.get(port);
 		if (mapping == null) return 0;
 		return mapping.LP;
 	}
 
 	public static int timeout(int port)
 	{
-		ConnectionMapping mapping = Configuration.MAPPING.get(port);
+		AddressMapping mapping = Configuration.MAPPING.get(port);
 		if (mapping == null) return 0;
 		return mapping.timeout;
 	}

@@ -2,7 +2,7 @@ package org.mve.cross.pack;
 
 import org.mve.cross.Configuration;
 import org.mve.cross.connection.ConnectionManager;
-import org.mve.cross.connection.ConnectionMapping;
+import org.mve.cross.AddressMapping;
 import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.CrossNet;
 import org.mve.cross.Serialization;
@@ -51,7 +51,7 @@ public class Handshake extends Datapack
 			conn.network.communication = conn;
 			if (conn.network.type == CrossNet.SIDE_CLIENT)
 			{
-				for (Map.Entry<Integer, ConnectionMapping> entry : Configuration.MAPPING.entrySet())
+				for (Map.Entry<Integer, AddressMapping> entry : Configuration.MAPPING.entrySet())
 				{
 					int listenPort = entry.getKey();
 					CrossNet.LOG.info("Communication listen " + listenPort);
