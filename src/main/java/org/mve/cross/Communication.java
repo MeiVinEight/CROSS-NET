@@ -28,8 +28,6 @@ public class Communication implements Runnable
 		{
 			if (this.network.communication == null)
 			{
-				// Waiting 5s
-				LockSupport.parkNanos(Configuration.COMMUNICATION_CONNECT * 1_000_000L);
 				if (this.network.type == CrossNet.SIDE_CLIENT)
 				{
 					SocketChannel channel = null;
@@ -81,7 +79,11 @@ public class Communication implements Runnable
 						}
 					}
 				}
-				Thread.yield();
+				if (this.network.communication == null)
+				{
+					// Waiting 5s
+					LockSupport.parkNanos(Configuration.COMMUNICATION_CONNECT * 1_000_000L);
+				}
 				continue;
 			}
 			Datapack datapack;
