@@ -5,7 +5,6 @@ import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionWaiting;
 import org.mve.cross.CrossNet;
-import org.mve.cross.NetworkManager;
 import org.mve.cross.Serialization;
 
 import java.io.IOException;

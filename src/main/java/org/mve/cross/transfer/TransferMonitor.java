@@ -7,6 +7,7 @@ import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
@@ -36,13 +37,14 @@ public class TransferMonitor implements Runnable
 				SocketChannel socket = server.accept();
 				socket.configureBlocking(false);
 				ConnectionManager cm = new ConnectionManager(this.network, socket);
+				SocketAddress sra = socket.getRemoteAddress();
 				try
 				{
 					// TODO Check connection source (Handshake key)
 					Datapack pack = cm.receive();
 					if (!(pack instanceof Handshake))
 					{
-						CrossNet.LOG.warning("Handshake required: " + socket.getRemoteAddress());
+						CrossNet.LOG.warning("Handshake required: " + sra);
 						cm.close();
 						continue;
 					}
@@ -52,7 +54,7 @@ public class TransferMonitor implements Runnable
 					pack.accept(cm);
 					if (cm.socket.socket().isClosed())
 					{
-						CrossNet.LOG.warning("Connection closed: " + socket.getRemoteAddress());
+						CrossNet.LOG.warning("Connection closed: " + sra);
 					}
 				}
 				catch (IOException e)

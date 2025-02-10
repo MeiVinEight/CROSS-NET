@@ -71,7 +71,7 @@ public class TransferManager
 		{
 			CrossNet.LOG.info(
 				"Transfer connection client " +
-				this.socket.getRemoteAddress() +
+				this.address +
 				" closing"
 			);
 			this.socket.close();
