@@ -2,9 +2,9 @@ package org.mve.cross;
 
 import org.mve.cross.concurrent.SynchronizeNET;
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.connection.ConnectionMonitor;
 import org.mve.cross.connection.ConnectionWaiting;
-import org.mve.cross.transfer.TransferManager;
 import org.mve.cross.transfer.TransferMonitor;
 
 import java.net.InetSocketAddress;
@@ -22,10 +22,10 @@ public class NetworkManager
 	public ConnectionManager communication;
 	// Server listen connections from all users
 	public final ConnectionMonitor[] server = new ConnectionMonitor[65536];
-	public final ConnectionWaiting[] waiting = new ConnectionWaiting[65536];
-	private int status;
-	public TransferManager[][][][] connection = new TransferManager[256][][][];
+	public final ConnectionMapping[] connection = new ConnectionMapping[65536];
 	public final SynchronizeNET synchronize = new SynchronizeNET(this);
+	public final ConnectionWaiting waiting = new ConnectionWaiting(this);
+	private int status;
 
 	public NetworkManager(int type)
 	{
@@ -34,6 +34,7 @@ public class NetworkManager
 		{
 			if (this.type == CrossNet.SIDE_SERVER)
 			{
+				CrossNet.LOG.info("Opening server on " + Configuration.SERVER_PORT);
 				// Create remote listen server
 				// ServerSocket remote = new ServerSocket(SERVER_PORT);
 				ServerSocketChannel remote = ServerSocketChannel.open();
@@ -48,9 +49,11 @@ public class NetworkManager
 			}
 			else // CrossNet.SIDE_CLIENT
 			{
+				CrossNet.LOG.info("Connecting server on " + Configuration.SERVER_PORT);
 				this.transfer = null;
 				this.status = NetworkManager.NETWORK_STAT_RUNNING;
 				new Thread(new Communication(this)).start();
+				this.synchronize.offer(this.waiting);
 			}
 		}
 		catch (Throwable t)
@@ -96,49 +99,25 @@ public class NetworkManager
 		CrossNet.LOG.close();
 	}
 
-	public static int mapping(int port)
+	public ConnectionMapping connection(int id)
 	{
-		AddressMapping mapping = Configuration.MAPPING.get(port);
-		if (mapping == null) return 0;
-		return mapping.LP;
+		return this.connection[id];
 	}
 
-	public static int timeout(int port)
+	public void connection(int id, ConnectionMapping obj)
 	{
-		AddressMapping mapping = Configuration.MAPPING.get(port);
-		if (mapping == null) return 0;
-		return mapping.timeout;
+		synchronized (this.connection)
+		{
+			this.connection[id] = obj;
+		}
 	}
 
-	public TransferManager connection(int rp, int lp)
+	public int search()
 	{
-		int idx0 = (rp >> 8) & 0xFF;
-		int idx1 = (rp >> 0) & 0xFF;
-		int idx2 = (lp >> 8) & 0xFF;
-		int idx3 = (lp >> 0) & 0xFF;
-		TransferManager[][][][] s0 = this.connection;
-		if (s0[idx0] == null) s0[idx0] = new TransferManager[256][][];
-		TransferManager[][][] s1 = s0[idx0];
-		if (s1[idx1] == null) s1[idx1] = new TransferManager[256][];
-		TransferManager[][] s2 = s1[idx1];
-		if (s2[idx2] == null) s2[idx2] = new TransferManager[256];
-		TransferManager[] s3 = s2[idx2];
-		return s3[idx3];
-	}
-
-	public void connection(int rp, int lp, TransferManager obj)
-	{
-		int idx0 = (rp >> 8) & 0xFF;
-		int idx1 = (rp >> 0) & 0xFF;
-		int idx2 = (lp >> 8) & 0xFF;
-		int idx3 = (lp >> 0) & 0xFF;
-		TransferManager[][][][] s0 = this.connection;
-		if (s0[idx0] == null) s0[idx0] = new TransferManager[256][][];
-		TransferManager[][][] s1 = s0[idx0];
-		if (s1[idx1] == null) s1[idx1] = new TransferManager[256][];
-		TransferManager[][] s2 = s1[idx1];
-		if (s2[idx2] == null) s2[idx2] = new TransferManager[256];
-		TransferManager[] s3 = s2[idx2];
-		s3[idx3] = obj;
+		for (int i = 1; i < this.connection.length; i++)
+		{
+			if ((this.connection[i] == null) && (!this.waiting.occupy(i))) return i;
+		}
+		return 0;
 	}
 }

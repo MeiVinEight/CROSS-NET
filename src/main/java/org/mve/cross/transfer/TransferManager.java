@@ -1,7 +1,9 @@
 package org.mve.cross.transfer;
 
 import org.mve.cross.CrossNet;
+import org.mve.cross.NetworkManager;
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMapping;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,6 +12,8 @@ import java.util.logging.Level;
 
 public class TransferManager
 {
+	public final NetworkManager network;
+	public final int UID;
 	public final ConnectionManager connection;
 	public final SocketChannel socket;
 	public final InetSocketAddress address;
@@ -19,10 +23,13 @@ public class TransferManager
 	public final Thread C2S;
 	private boolean running = true;
 
-	public TransferManager(ConnectionManager connection, SocketChannel socket)
+	public TransferManager(NetworkManager network, int id)
 	{
-		this.connection = connection;
-		this.socket = socket;
+		this.network = network;
+		this.UID = id;
+		ConnectionMapping mapping = this.network.connection(id);
+		this.connection = mapping.server;
+		this.socket = mapping.client;
 		this.address = (InetSocketAddress) this.socket.socket().getRemoteSocketAddress();
 		if (this.connection.network.type == CrossNet.SIDE_SERVER)
 		{
@@ -38,7 +45,6 @@ public class TransferManager
 		this.C2S = new Thread(new TransferC2S(this));
 		this.S2C.start();
 		this.C2S.start();
-
 	}
 
 	public int RP()
@@ -60,7 +66,7 @@ public class TransferManager
 	{
 		CrossNet.LOG.info("Transfer close");
 		this.running = false;
-		this.connection.network.connection(this.RP(), this.LP(), null);
+		// this.connection.network.connection(this.RP(), this.LP(), null);
 		CrossNet.LOG.info(
 			"Transfer connection server " +
 			this.connection.address +
@@ -79,6 +85,17 @@ public class TransferManager
 		catch (IOException e)
 		{
 			CrossNet.LOG.log(Level.WARNING, null, e);
+		}
+		synchronized (this.network.connection)
+		{
+			ConnectionMapping mapping = this.network.connection(this.UID);
+			if (mapping != null)
+			{
+				if (mapping.server.address.equals(this.connection.address))
+				{
+					this.network.connection(this.UID, null);
+				}
+			}
 		}
 	}
 

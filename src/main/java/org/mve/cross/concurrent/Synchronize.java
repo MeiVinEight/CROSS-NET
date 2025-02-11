@@ -1,6 +1,6 @@
 package org.mve.cross.concurrent;
 
-public abstract class Synchronized implements Runnable
+public abstract class Synchronize implements Runnable
 {
 	public long delay = 0;
 	public long period = 1;

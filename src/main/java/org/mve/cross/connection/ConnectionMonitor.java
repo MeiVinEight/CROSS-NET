@@ -29,6 +29,7 @@ public class ConnectionMonitor implements Runnable
 		Thread.currentThread().setName("Connection-" + this.ID);
 		while (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
 		{
+			Thread.yield();
 			CrossNet.LOG.info("Waiting for connection at " + this.ID);
 			SocketChannel socket = null;
 			try
@@ -59,10 +60,30 @@ public class ConnectionMonitor implements Runnable
 
 			int lp = socket.socket().getLocalPort();
 			CrossNet.LOG.info("Connection from " + socket.socket().getRemoteSocketAddress() + " at " + lp);
+			int id = this.network.search();
+			if (id == 0)
+			{
+				CrossNet.LOG.warning("Connection overflow!");
+				try
+				{
+					socket.close();
+				}
+				catch (IOException e)
+				{
+					CrossNet.LOG.log(Level.WARNING, null, e);
+				}
+				continue;
+			}
+
 			Connection conn = new Connection();
-			conn.LP = (short) lp;
+			conn.RP = (short) lp;
+			conn.UID = id;
 			try
 			{
+				if (this.network.communication == null)
+				{
+					throw new IOException("Communication is null");
+				}
 				this.network.communication.send(conn);
 			}
 			catch (IOException e)
@@ -79,7 +100,10 @@ public class ConnectionMonitor implements Runnable
 				}
 				continue;
 			}
-			this.network.waiting[this.ID].offer(socket);
+			ConnectionID cid = new ConnectionID();
+			cid.client = socket;
+			cid.ID = id;
+			this.network.waiting.offer(cid);
 		}
 	}
 

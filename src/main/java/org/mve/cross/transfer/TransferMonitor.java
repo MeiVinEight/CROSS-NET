@@ -3,11 +3,12 @@ package org.mve.cross.transfer;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.pack.Connection;
 import org.mve.cross.pack.Datapack;
-import org.mve.cross.pack.Handshake;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
@@ -33,33 +34,25 @@ public class TransferMonitor implements Runnable
 		{
 			while (this.network.status() == NetworkManager.NETWORK_STAT_RUNNING)
 			{
+				Thread.yield();
 				CrossNet.LOG.info("Waiting for transfer connection at " + this.ID);
 				SocketChannel socket = server.accept();
 				socket.configureBlocking(false);
-				ConnectionManager cm = new ConnectionManager(this.network, socket);
+				ConnectionManager cm = new ConnectionManager(this.network);
 				SocketAddress sra = socket.getRemoteAddress();
 				try
 				{
-					// TODO Check connection source (Handshake key)
-					Datapack pack = cm.receive();
-					if (!(pack instanceof Handshake))
+					cm.connect(socket);
+					Datapack datapack = cm.receive();
+					if (!(datapack instanceof Connection))
 					{
-						CrossNet.LOG.warning("Handshake required: " + sra);
-						cm.close();
-						continue;
+						throw new SocketException("Unknown connection " + sra);
 					}
-					Handshake handshake = new Handshake();
-					handshake.listen = ((Handshake) pack).listen;
-					cm.send(handshake);
-					pack.accept(cm);
-					if (cm.socket.socket().isClosed())
-					{
-						CrossNet.LOG.warning("Connection closed: " + sra);
-					}
+					datapack.accept(cm);
 				}
 				catch (IOException e)
 				{
-					CrossNet.LOG.severe("Handshake error");
+					CrossNet.LOG.severe("Create connection error: " + sra);
 					CrossNet.LOG.log(Level.SEVERE, null, e);
 					socket.close();
 					cm.close();

@@ -1,11 +1,8 @@
 package org.mve.cross;
 
-import org.mve.cross.pack.Transfer;
+import org.mve.cross.pack.*;
 import org.mve.invoke.ConstructorAccessor;
 import org.mve.invoke.ReflectionFactory;
-import org.mve.cross.pack.Connection;
-import org.mve.cross.pack.Datapack;
-import org.mve.cross.pack.Handshake;
 
 import java.lang.invoke.MethodType;
 
@@ -15,8 +12,12 @@ public class ProtocolManager
 
 	static
 	{
-		CONSTRUCTOR = (ConstructorAccessor<? extends Datapack>[]) new ConstructorAccessor<?>[3];
+		CONSTRUCTOR = (ConstructorAccessor<? extends Datapack>[]) new ConstructorAccessor<?>[7];
 		CONSTRUCTOR[Handshake.ID] = ReflectionFactory.access(Handshake.class, MethodType.methodType(void.class));
+		CONSTRUCTOR[Acknowledge.ID] = ReflectionFactory.access(Acknowledge.class, MethodType.methodType(void.class));
+		CONSTRUCTOR[Disconnect.ID] = ReflectionFactory.access(Disconnect.class, MethodType.methodType(void.class));
+		CONSTRUCTOR[Ping.ID] = ReflectionFactory.access(Ping.class, MethodType.methodType(void.class));
+		CONSTRUCTOR[Listen.ID] = ReflectionFactory.access(Listen.class, MethodType.methodType(void.class));
 		CONSTRUCTOR[Connection.ID] = ReflectionFactory.access(Connection.class, MethodType.methodType(void.class));
 		CONSTRUCTOR[Transfer.ID] = ReflectionFactory.access(Transfer.class, MethodType.methodType(void.class));
 	}

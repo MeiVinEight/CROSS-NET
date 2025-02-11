@@ -11,7 +11,7 @@ import java.nio.channels.WritableByteChannel;
 
 public class Transfer extends Datapack
 {
-	public static final int ID = 0x02;
+	public static final int ID = 0x06;
 	public byte[] payload;
 
 	@Override

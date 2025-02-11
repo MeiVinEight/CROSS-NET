@@ -34,10 +34,12 @@ public class TransferS2C implements Runnable
 				Datapack pack = this.transfer.connection.receive();
 				if (pack instanceof Transfer transfer)
 				{
-					ByteBuffer buffer = ByteBuffer.allocateDirect(transfer.payload.length);
+					ByteBuffer buffer = ByteBuffer.allocateDirect(1048576);
 					buffer.put(transfer.payload);
 					buffer.flip();
 					Serialization.transfer((WritableByteChannel) this.transfer.socket, buffer);
+					buffer.clear();
+					System.gc();
 				}
 				else
 				{

@@ -1,96 +1,100 @@
 package org.mve.cross.pack;
 
-import org.mve.cross.connection.ConnectionManager;
-import org.mve.cross.connection.ConnectionMonitor;
+import org.mve.cross.Configuration;
 import org.mve.cross.CrossNet;
-import org.mve.cross.NetworkManager;
+import org.mve.cross.connection.ConnectionID;
+import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.Serialization;
-import org.mve.cross.connection.ConnectionWaiting;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.logging.Level;
 
 public class Connection extends Datapack
 {
-	public static final int ID = 0x01;
+	public static final int ID = 0x05;
 
-	public short LP; // Local port
+	public short RP; // Local port
+	public int UID;
 
 	@Override
 	public void accept(ConnectionManager conn)
 	{
-		// Apply a new connection
-		NetworkManager network = conn.network;
-		if (network.type == CrossNet.SIDE_SERVER)
+		if (!conn.established())
 		{
-			// Create server listen on LP
-			int port = (this.LP & 0xFFFF);
-			try
-			{
-				int timeout = NetworkManager.timeout(port);
-				if (network.waiting[port] == null) network.waiting[port] = new ConnectionWaiting(network, port, timeout);
-				if (network.server[port] == null)
-				{
-					ServerSocketChannel channel = ServerSocketChannel.open();
-					// channel.configureBlocking(false);
-					channel.bind(new InetSocketAddress(port));
-					network.server[port] = new ConnectionMonitor(conn.network, channel);
-					new Thread(network.server[port]).start();
-				}
-			}
-			catch (IOException e)
-			{
-				CrossNet.LOG.log(Level.SEVERE, null, e);
-			}
+			CrossNet.LOG.severe("Connection: REQUIRED ESTABLISHED");
+			return;
 		}
-		else // SIDE_CLIENT
+		if (conn.network.type == CrossNet.SIDE_CLIENT)
 		{
-			// A new connection accepted at LP on server
-			int localePort = NetworkManager.mapping(this.LP & 0xFFFF);
-			CrossNet.LOG.info("Connection at " + this.LP + ", create transfer connection to " + localePort);
-			SocketChannel client; // Connection with FRP endpoint
-			try
+			int localPort = Configuration.mapping(this.RP);
+			if (localPort == 0)
 			{
-				// TODO Use properties ip
-				// client = new Socket("127.0.0.1", localePort);
-				client = SocketChannel.open();
-				client.configureBlocking(false);
-				client.connect(new InetSocketAddress(localePort));
-				while (!client.finishConnect()) Thread.yield();
-				int clp = client.socket().getLocalPort();
-				CrossNet.LOG.info("Connection to endpoint 127.0.0.1:" + localePort + " at " + clp);
-			}
-			catch (IOException e)
-			{
-				CrossNet.LOG.severe("Cannot connect to endpoint 127.0.0.1:" + localePort);
-				CrossNet.LOG.log(Level.SEVERE, null, e);
+				CrossNet.LOG.warning("Unknown connection RP: " + this.RP);
 				return;
 			}
 
-			conn.network.waiting[this.LP].offer(client);
+			if (conn.network.connection(this.UID) != null)
+			{
+				CrossNet.LOG.warning("Connection already exists: " + this.UID);
+				return;
+			}
+
+			CrossNet.LOG.info("Connection at " + this.RP + ", create transfer connection to " + localPort);
+			SocketChannel client = ConnectionManager.connect(new InetSocketAddress(localPort));
+			if (client == null)
+			{
+				CrossNet.LOG.warning("Could not connect to " + localPort);
+				return;
+			}
+
+			SocketAddress server = conn.address;
+			ConnectionID cid = new ConnectionID();
+			cid.server = server;
+			cid.client = client;
+			cid.ID = this.UID;
+			conn.network.waiting.offer(cid);
+		}
+		else
+		{
+			if (this.UID != 0)
+			{
+				// Transfer connection
+				conn.network.waiting.poll(conn, this.UID);
+				return;
+			}
+
+			// Communication connection
+			if (conn.network.communication != null)
+			{
+				CrossNet.LOG.warning("Communication is in use");
+				return;
+			}
+			CrossNet.LOG.info("Connection register to communication: " + conn.address);
+			conn.network.communication = conn;
 		}
 	}
 
 	@Override
 	public void read(ReadableByteChannel in) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(2);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(6);
 		Serialization.transfer(in, buffer);
 		buffer.flip();
-		this.LP = buffer.getShort();
+		this.RP = buffer.getShort();
+		this.UID = buffer.getInt();
 	}
 
 	@Override
 	public void write(WritableByteChannel out) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(2);
-		buffer.putShort(this.LP);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(6);
+		buffer.putShort(this.RP);
+		buffer.putInt(this.UID);
 		buffer.flip();
 		Serialization.transfer(out, buffer);
 	}

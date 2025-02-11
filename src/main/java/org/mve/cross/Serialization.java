@@ -79,7 +79,12 @@ public class Serialization
 
 	public static void transfer(ReadableByteChannel channel, ByteBuffer buffer) throws IOException
 	{
-		while (buffer.hasRemaining()) channel.read(buffer);
+		while (buffer.hasRemaining())
+		{
+			int read = channel.read(buffer);
+			if (read < 0) throw new EOFException();
+			Thread.yield();
+		}
 	}
 
 	public static void transfer(WritableByteChannel channel, ByteBuffer buffer) throws IOException

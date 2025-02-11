@@ -10,7 +10,7 @@ public class SynchronizeNET implements Runnable
 {
 	private static final long PERIOD_MS = 50;
 	public final NetworkManager network;
-	private final Queue<Synchronized> queue = new ConcurrentLinkedQueue<>();
+	private final Queue<Synchronize> queue = new ConcurrentLinkedQueue<>();
 	private boolean running = true;
 
 	public SynchronizeNET(NetworkManager network)
@@ -37,7 +37,7 @@ public class SynchronizeNET implements Runnable
 		int count = this.queue.size();
 		while (count --> 0)
 		{
-			Synchronized task = this.queue.poll();
+			Synchronize task = this.queue.poll();
 			if (task == null) continue;
 
 			if (task.cancelled) continue;
@@ -56,7 +56,7 @@ public class SynchronizeNET implements Runnable
 		}
 	}
 
-	public void offer(Synchronized task)
+	public void offer(Synchronize task)
 	{
 		this.queue.offer(task);
 	}

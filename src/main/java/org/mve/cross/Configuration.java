@@ -24,9 +24,21 @@ public class Configuration
 	public static final String SERVER_ADDRESS;
 	public static final int SERVER_PORT;
 	public static final int COMMUNICATION_CONNECT;
-
 	public static final int DEFAULT_BUFFER_SIZE = 4096;
 
+	public static int mapping(int port)
+	{
+		AddressMapping mapping = Configuration.MAPPING.get(port);
+		if (mapping == null) return 0;
+		return mapping.LP;
+	}
+
+	public static int timeout(int port)
+	{
+		AddressMapping mapping = Configuration.MAPPING.get(port);
+		if (mapping == null) return 0;
+		return mapping.timeout;
+	}
 
 	static
 	{

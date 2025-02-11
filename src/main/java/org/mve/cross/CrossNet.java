@@ -3,6 +3,7 @@ package org.mve.cross;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.mve.cross.logger.CrossLogger;
+import org.mve.invoke.MagicAccessor;
 import org.mve.invoke.common.JavaVM;
 
 import java.io.FileInputStream;
