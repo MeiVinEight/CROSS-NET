@@ -11,15 +11,12 @@ import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
 public class ConnectionWaiting extends Synchronize
 {
 	private final NetworkManager network;
-	private final ConnectionID[] waiting = new ConnectionID[65536];
-	private final Queue<Integer> connection = new ConcurrentLinkedQueue<>();
-	private final ReentrantLock lock = new ReentrantLock();
+	private final Queue<ConnectionID> connection = new ConcurrentLinkedQueue<>();
 
 	public ConnectionWaiting(NetworkManager network)
 	{
@@ -36,10 +33,11 @@ public class ConnectionWaiting extends Synchronize
 			return;
 		}
 
-		Integer objid = this.connection.poll();
-		if (objid == null) return;
-		ConnectionID cid = this.waiting[objid];
+		ConnectionID cid = this.connection.poll();
 		if (cid == null) return;
+		ConnectionMapping mapping = this.network.connection(cid.ID);
+		if (mapping == null) return;
+		if (mapping.status != ConnectionMapping.WAITING) return;
 
 		SocketChannel serverChannel = null;
 		ConnectionManager cm;
@@ -54,7 +52,7 @@ public class ConnectionWaiting extends Synchronize
 			cm = new ConnectionManager(this.network, serverChannel);
 			CrossNet.LOG.info(MessageFormat.format("[{0}] Talk to server {1}", cid.ID, cid.server));
 			Connection pack = new Connection();
-			pack.RP = (short) cid.client.socket().getPort();
+			pack.RP = (short) mapping.client.socket().getPort();
 			pack.UID = cid.ID;
 			cm.send(pack);
 		}
@@ -82,23 +80,8 @@ public class ConnectionWaiting extends Synchronize
 	public void offer(ConnectionID conn)
 	{
 		if (conn == null) return;
-		ConnectionID exchange = conn;
 
-		this.lock.lock();
-		if (this.waiting[conn.ID] == null)
-		{
-			this.waiting[conn.ID] = exchange;
-			exchange = null;
-		}
-		this.lock.unlock();
-
-		if (exchange != null)
-		{
-			CrossNet.LOG.warning("Waiting already exists: " + conn.ID);
-			return;
-		}
-
-		this.connection.offer(conn.ID);
+		this.connection.offer(conn);
 		CrossNet.LOG.info(
 			"Connection waiting for [" +
 			conn.ID +
@@ -112,37 +95,19 @@ public class ConnectionWaiting extends Synchronize
 
 	public void poll(ConnectionManager cm, int id)
 	{
-		ConnectionID cid = null;
-		this.lock.lock();
-		if (this.waiting[id] != null)
-		{
-			cid = this.waiting[id];
-			this.waiting[id] = null;
-		}
-		this.lock.unlock();
-		if (cid == null)
-		{
-			CrossNet.LOG.warning("Unknown waiting ID: " + id);
-			return;
-		}
-
+		ConnectionMapping mapping = this.network.connection(id);
+		mapping.status = ConnectionMapping.CONNECTED;
+		mapping.server = cm;
 		CrossNet.LOG.info(
 			"Transfer connection " +
-			cid.client.socket().getRemoteSocketAddress() +
+			mapping.client.socket().getRemoteSocketAddress() +
 			" - " +
 			cm.address +
 			", " +
 			this.connection.size() +
 			" connection(s)"
 		);
-		ConnectionMapping mapping = new ConnectionMapping(cm, cid.client);
-		this.network.connection(id, mapping);
-		TransferManager tm = new TransferManager(cm.network, id);
-	}
-
-	public boolean occupy(int id)
-	{
-		return this.waiting[id] != null;
+		new TransferManager(cm.network, id);
 	}
 
 	public void close()

@@ -5,6 +5,7 @@ import org.mve.cross.CrossNet;
 import org.mve.cross.connection.ConnectionID;
 import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.Serialization;
+import org.mve.cross.connection.ConnectionMapping;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -44,6 +45,9 @@ public class Connection extends Datapack
 				return;
 			}
 
+			ConnectionMapping mapping = new ConnectionMapping();
+			conn.network.connection(this.UID, mapping);
+
 			CrossNet.LOG.info("Connection at " + this.RP + ", create transfer connection to " + localPort);
 			SocketChannel client = ConnectionManager.connect(new InetSocketAddress(localPort));
 			if (client == null)
@@ -51,11 +55,11 @@ public class Connection extends Datapack
 				CrossNet.LOG.warning("Could not connect to " + localPort);
 				return;
 			}
+			mapping.client = client;
 
 			SocketAddress server = conn.address;
 			ConnectionID cid = new ConnectionID();
 			cid.server = server;
-			cid.client = client;
 			cid.ID = this.UID;
 			conn.network.waiting.offer(cid);
 		}

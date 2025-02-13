@@ -127,6 +127,7 @@ public class ConnectionManager
 		}
 		catch (IOException e)
 		{
+			CrossNet.LOG.warning("Close connection failed " + this.address);
 			CrossNet.LOG.log(Level.WARNING, null, e);
 		}
 	}

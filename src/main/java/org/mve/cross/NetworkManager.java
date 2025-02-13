@@ -116,7 +116,7 @@ public class NetworkManager
 	{
 		for (int i = 1; i < this.connection.length; i++)
 		{
-			if ((this.connection[i] == null) && (!this.waiting.occupy(i))) return i;
+			if ((this.connection[i] == null)) return i;
 		}
 		return 0;
 	}

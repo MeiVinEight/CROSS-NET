@@ -5,10 +5,8 @@ import org.mve.cross.NetworkManager;
 import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.connection.ConnectionMapping;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.util.logging.Level;
 
 public class TransferManager
 {
@@ -66,34 +64,16 @@ public class TransferManager
 	{
 		CrossNet.LOG.info("Transfer close");
 		this.running = false;
-		// this.connection.network.connection(this.RP(), this.LP(), null);
-		CrossNet.LOG.info(
-			"Transfer connection server " +
-			this.connection.address +
-			" closing"
-		);
-		this.connection.close();
-		try
-		{
-			CrossNet.LOG.info(
-				"Transfer connection client " +
-				this.address +
-				" closing"
-			);
-			this.socket.close();
-		}
-		catch (IOException e)
-		{
-			CrossNet.LOG.log(Level.WARNING, null, e);
-		}
+		ConnectionMapping mapping;
 		synchronized (this.network.connection)
 		{
-			ConnectionMapping mapping = this.network.connection(this.UID);
+			mapping = this.network.connection(this.UID);
 			if (mapping != null)
 			{
 				if (mapping.server.address.equals(this.connection.address))
 				{
 					this.network.connection(this.UID, null);
+					mapping.close();
 				}
 			}
 		}

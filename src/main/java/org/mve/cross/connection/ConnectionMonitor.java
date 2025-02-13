@@ -75,11 +75,19 @@ public class ConnectionMonitor implements Runnable
 				continue;
 			}
 
-			Connection conn = new Connection();
-			conn.RP = (short) lp;
-			conn.UID = id;
+			ConnectionMapping mapping = new ConnectionMapping();
+			mapping.client = socket;
+			this.network.connection(id, mapping);
+
+			ConnectionID cid = new ConnectionID();
+			cid.ID = id;
+			this.network.waiting.offer(cid);
+
 			try
 			{
+				Connection conn = new Connection();
+				conn.RP = (short) lp;
+				conn.UID = id;
 				if (this.network.communication == null)
 				{
 					throw new IOException("Communication is null");
@@ -90,6 +98,7 @@ public class ConnectionMonitor implements Runnable
 			{
 				CrossNet.LOG.severe("Connection send failed");
 				CrossNet.LOG.log(Level.SEVERE, null, e);
+				this.network.connection(id, null);
 				try
 				{
 					socket.close();
@@ -98,12 +107,7 @@ public class ConnectionMonitor implements Runnable
 				{
 					CrossNet.LOG.log(Level.SEVERE, null, ex);
 				}
-				continue;
 			}
-			ConnectionID cid = new ConnectionID();
-			cid.client = socket;
-			cid.ID = id;
-			this.network.waiting.offer(cid);
 		}
 	}
 
