@@ -36,19 +36,7 @@ public class DynamicArray
 			oldBuffer.flip();
 			this.buffer.put(oldBuffer);
 		}
-		oldBuffer = null;
 		System.gc();
-	}
-
-	public void acquire(int capacity)
-	{
-		if (this.buffer.remaining() >= capacity) return;
-		if (this.buffer.position() + capacity <= this.buffer.capacity())
-		{
-			this.buffer.limit(this.buffer.capacity());
-			return;
-		}
-		this.expand(this.capacity() * 2);
 	}
 
 	public int read(ReadableByteChannel channel) throws IOException

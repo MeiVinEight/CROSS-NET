@@ -7,7 +7,6 @@ import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Transfer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
 public class TransferS2C implements Runnable
