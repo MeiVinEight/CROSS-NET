@@ -46,6 +46,7 @@ public class NetworkManager
 				this.transfer = new TransferMonitor(this, remote);
 				new Thread(new Communication(this)).start();
 				new Thread(this.transfer).start();
+				this.synchronize.offer(this.waiting);
 			}
 			else // CrossNet.SIDE_CLIENT
 			{

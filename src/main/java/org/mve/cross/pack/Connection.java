@@ -4,16 +4,13 @@ import org.mve.cross.Configuration;
 import org.mve.cross.CrossNet;
 import org.mve.cross.connection.ConnectionID;
 import org.mve.cross.connection.ConnectionManager;
-import org.mve.cross.Serialization;
 import org.mve.cross.connection.ConnectionMapping;
+import org.mve.cross.nio.DynamicArray;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
 
 public class Connection extends Datapack
 {
@@ -84,28 +81,28 @@ public class Connection extends Datapack
 	}
 
 	@Override
-	public void read(ReadableByteChannel in) throws IOException
+	public void read(DynamicArray buffer) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(6);
-		Serialization.transfer(in, buffer);
-		buffer.flip();
 		this.RP = buffer.getShort();
 		this.UID = buffer.getInt();
 	}
 
 	@Override
-	public void write(WritableByteChannel out) throws IOException
+	public void write(DynamicArray buffer) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(6);
 		buffer.putShort(this.RP);
 		buffer.putInt(this.UID);
-		buffer.flip();
-		Serialization.transfer(out, buffer);
 	}
 
 	@Override
 	public int ID()
 	{
 		return Connection.ID;
+	}
+
+	@Override
+	public int length()
+	{
+		return 6;
 	}
 }

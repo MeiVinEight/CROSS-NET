@@ -1,12 +1,9 @@
 package org.mve.cross.pack;
 
 import org.mve.cross.connection.ConnectionManager;
-import org.mve.cross.Serialization;
+import org.mve.cross.nio.DynamicArray;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.UUID;
 
 public class Handshake extends Datapack
@@ -30,28 +27,28 @@ public class Handshake extends Datapack
 	}
 
 	@Override
-	public void read(ReadableByteChannel in) throws IOException
+	public void read(DynamicArray buffer) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(16);
-		Serialization.transfer(in, buffer);
-		buffer.flip();
 		this.most = buffer.getLong();
 		this.least = buffer.getLong();
 	}
 
 	@Override
-	public void write(WritableByteChannel out) throws IOException
+	public void write(DynamicArray buffer) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(16);
 		buffer.putLong(this.most);
 		buffer.putLong(this.least);
-		buffer.flip();
-		Serialization.transfer(out, buffer);
 	}
 
 	@Override
 	public int ID()
 	{
 		return Handshake.ID;
+	}
+
+	@Override
+	public int length()
+	{
+		return 16;
 	}
 }

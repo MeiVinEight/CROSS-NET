@@ -1,16 +1,13 @@
 package org.mve.cross.pack;
 
 import org.mve.cross.CrossNet;
-import org.mve.cross.Serialization;
 import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.connection.ConnectionMonitor;
+import org.mve.cross.nio.DynamicArray;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.logging.Level;
 
 public class Listen extends Datapack
@@ -22,29 +19,29 @@ public class Listen extends Datapack
 	public short status;
 
 	@Override
-	public void read(ReadableByteChannel in) throws IOException
+	public void read(DynamicArray buffer) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocate(4);
-		Serialization.transfer(in, buffer);
-		buffer.flip();
 		this.ON = buffer.getShort();
 		this.status = buffer.getShort();
 	}
 
 	@Override
-	public void write(WritableByteChannel out) throws IOException
+	public void write(DynamicArray buffer) throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocate(4);
 		buffer.putShort(this.ON);
 		buffer.putShort(this.status);
-		buffer.flip();
-		Serialization.transfer(out, buffer);
 	}
 
 	@Override
 	public int ID()
 	{
 		return Listen.ID;
+	}
+
+	@Override
+	public int length()
+	{
+		return 4;
 	}
 
 	@Override

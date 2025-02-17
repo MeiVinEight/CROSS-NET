@@ -1,22 +1,21 @@
 package org.mve.cross.pack;
 
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.nio.DynamicArray;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
 public class Disconnect extends Datapack
 {
 	public static final int ID = 0x02;
 
 	@Override
-	public void read(ReadableByteChannel in) throws IOException
+	public void read(DynamicArray buffer) throws IOException
 	{
 	}
 
 	@Override
-	public void write(WritableByteChannel out) throws IOException
+	public void write(DynamicArray buffer) throws IOException
 	{
 	}
 
@@ -24,6 +23,12 @@ public class Disconnect extends Datapack
 	public int ID()
 	{
 		return Disconnect.ID;
+	}
+
+	@Override
+	public int length()
+	{
+		return 0;
 	}
 
 	@Override

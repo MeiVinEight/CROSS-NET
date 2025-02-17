@@ -2,6 +2,7 @@ package org.mve.cross.transfer;
 
 import org.mve.cross.CrossNet;
 import org.mve.cross.Serialization;
+import org.mve.cross.nio.DynamicArray;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Transfer;
 
@@ -21,6 +22,7 @@ public class TransferS2C implements Runnable
 	@Override
 	public void run()
 	{
+		DynamicArray buffer = new DynamicArray();
 		Thread.currentThread().setName("Transfer-" + this.transfer.RP());
 		try
 		{
@@ -34,7 +36,7 @@ public class TransferS2C implements Runnable
 				Datapack pack = this.transfer.connection.receive();
 				if (pack instanceof Transfer transfer)
 				{
-					ByteBuffer buffer = ByteBuffer.allocateDirect(1048576);
+					buffer.expand(transfer.payload.length);
 					buffer.put(transfer.payload);
 					buffer.flip();
 					Serialization.transfer((WritableByteChannel) this.transfer.socket, buffer);

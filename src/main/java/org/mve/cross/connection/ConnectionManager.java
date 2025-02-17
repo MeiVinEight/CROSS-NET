@@ -1,9 +1,11 @@
 package org.mve.cross.connection;
 
+import org.mve.cross.Configuration;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.ProtocolManager;
 import org.mve.cross.Serialization;
+import org.mve.cross.nio.DynamicArray;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 
@@ -11,7 +13,6 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
@@ -31,10 +32,13 @@ public class ConnectionManager
 	public final NetworkManager network;
 	public SocketChannel socket;
 	private final ReentrantLock lock = new ReentrantLock();
+	private final ReentrantLock receive = new ReentrantLock();
 	public InetSocketAddress address;
 	// local port
 	public int LP;
 	private int status = ConnectionManager.STAT_CLOSED;
+	private final DynamicArray RB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
+	private final DynamicArray WB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
 
 	public ConnectionManager(NetworkManager network)
 	{
@@ -88,16 +92,25 @@ public class ConnectionManager
 
 	public Datapack receive() throws IOException
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
-		Serialization.transfer((ReadableByteChannel) this.socket, buffer);
-		buffer.flip();
-		byte id = buffer.get();
+		this.receive.lock();
+		this.RB.clear();
+		this.RB.limit(5);
+		Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
+		RB.flip();
+		int length = this.RB.getInt();
+		byte id = RB.get();
 		if (id >= ProtocolManager.CONSTRUCTOR.length)
 		{
 			throw new IOException("UNKNOWN DATAPACK ID: " + id);
 		}
+		this.RB.expand(length);
+		this.RB.clear();
+		this.RB.limit(length);
+		Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
+		this.RB.flip();
 		Datapack pack = ProtocolManager.CONSTRUCTOR[id].invoke();
-		pack.read(this.socket);
+		pack.read(RB);
+		this.receive.unlock();
 		// this.lock.unlock();
 		return pack;
 	}
@@ -107,11 +120,13 @@ public class ConnectionManager
 		// OutputStream out = this.socket.getOutputStream();
 		this.lock.lock();
 		// Serialization.W1(out, (byte) pack.ID());
-		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
-		buffer.put((byte) pack.ID());
-		buffer.flip();
-		Serialization.transfer((WritableByteChannel) this.socket, buffer);
-		pack.write(this.socket);
+		this.WB.expand(5 + pack.length());
+		this.WB.clear();
+		this.WB.putInt(pack.length());
+		this.WB.put((byte) pack.ID());
+		pack.write(this.WB);
+		this.WB.flip();
+		Serialization.transfer((WritableByteChannel) this.socket, this.WB);
 		this.lock.unlock();
 	}
 
@@ -130,11 +145,6 @@ public class ConnectionManager
 			CrossNet.LOG.warning("Close connection failed " + this.address);
 			CrossNet.LOG.log(Level.WARNING, null, e);
 		}
-	}
-
-	public int status()
-	{
-		return this.status;
 	}
 
 	public boolean established()

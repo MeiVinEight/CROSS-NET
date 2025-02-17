@@ -1,10 +1,11 @@
 package org.mve.cross;
 
+import org.mve.cross.nio.DynamicArray;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
@@ -26,18 +27,18 @@ public class Serialization
 		out.write(buf, 0, length);
 	}
 
-	public static void transfer(ReadableByteChannel channel, ByteBuffer buffer) throws IOException
+	public static void transfer(ReadableByteChannel channel, DynamicArray buffer) throws IOException
 	{
-		while (buffer.hasRemaining())
+		while (buffer.remaining() > 0)
 		{
-			int read = channel.read(buffer);
+			int read = buffer.read(channel);
 			if (read < 0) throw new EOFException();
 			Thread.yield();
 		}
 	}
 
-	public static void transfer(WritableByteChannel channel, ByteBuffer buffer) throws IOException
+	public static void transfer(WritableByteChannel channel, DynamicArray buffer) throws IOException
 	{
-		while (buffer.hasRemaining()) channel.write(buffer);
+		while (buffer.remaining() > 0) buffer.write(channel);
 	}
 }

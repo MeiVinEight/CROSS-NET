@@ -27,17 +27,24 @@ public class ConnectionWaiting extends Synchronize
 	public void run()
 	{
 		// Not allowed on server side
+		/*
 		if (this.network.type == CrossNet.SIDE_SERVER)
 		{
 			this.cancel();
 			return;
 		}
+		*/
 
 		ConnectionID cid = this.connection.poll();
 		if (cid == null) return;
 		ConnectionMapping mapping = this.network.connection(cid.ID);
 		if (mapping == null) return;
 		if (mapping.status != ConnectionMapping.WAITING) return;
+		if (this.network.type == CrossNet.SIDE_SERVER)
+		{
+			this.connection.offer(cid);
+			return;
+		}
 
 		SocketChannel serverChannel = null;
 		ConnectionManager cm;
@@ -82,15 +89,13 @@ public class ConnectionWaiting extends Synchronize
 		if (conn == null) return;
 
 		this.connection.offer(conn);
-		CrossNet.LOG.info(
-			"Connection waiting for [" +
-			conn.ID +
-			"] " +
-			conn.server +
-			", " +
-			this.connection.size() +
-			" connection(s)"
-		);
+		String message = "Connection waiting for [" + conn.ID + "]";
+		if (conn.server != null)
+		{
+			message += " " + conn.server;
+		}
+		message += ", " + this.connection.size() + " connection(s)";
+		CrossNet.LOG.info(message);
 	}
 
 	public void poll(ConnectionManager cm, int id)
