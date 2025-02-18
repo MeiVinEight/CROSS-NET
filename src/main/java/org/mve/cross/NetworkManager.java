@@ -137,6 +137,13 @@ public class NetworkManager
 				this.connection[id] = null;
 			}
 		}
-		if (mapping != null) this.identifier.free(mapping.UID);
+		if (mapping != null)
+		{
+			int stat = this.identifier.free(mapping.UID);
+			if (stat != 0)
+			{
+				CrossNet.LOG.warning("Wrong freeing: " + stat);
+			}
+		}
 	}
 }
