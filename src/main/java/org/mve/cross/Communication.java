@@ -35,7 +35,7 @@ public class Communication implements Runnable
 				{
 					SocketChannel channel = null;
 					InetAddress addr = null;
-					ConnectionManager cm = null;
+					ConnectionManager cm;
 					try
 					{
 						addr = InetAddress.getByName(Configuration.SERVER_ADDRESS);
