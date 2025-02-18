@@ -9,6 +9,7 @@ import org.mve.cross.transfer.TransferMonitor;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
+import java.text.MessageFormat;
 import java.util.logging.Level;
 
 public class NetworkManager
@@ -137,12 +138,13 @@ public class NetworkManager
 				this.connection[id] = null;
 			}
 		}
+		if (this.type == CrossNet.SIDE_CLIENT) return;
 		if (mapping != null)
 		{
 			int stat = this.identifier.free(mapping.UID);
 			if (stat != 0)
 			{
-				CrossNet.LOG.warning("Wrong freeing: " + stat);
+				CrossNet.LOG.warning(MessageFormat.format("Wrong freeing [{0}]: {1}", id, stat));
 			}
 		}
 	}

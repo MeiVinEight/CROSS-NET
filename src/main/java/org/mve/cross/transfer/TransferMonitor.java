@@ -48,6 +48,7 @@ public class TransferMonitor implements Runnable
 					{
 						throw new SocketException("Unknown connection " + sra);
 					}
+					cm.blocking = false;
 					datapack.accept(cm);
 				}
 				catch (IOException e)

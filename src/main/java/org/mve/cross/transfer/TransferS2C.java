@@ -32,7 +32,9 @@ public class TransferS2C implements Runnable
 			}
 			while (this.transfer.running())
 			{
+				Thread.yield();
 				Datapack pack = this.transfer.connection.receive();
+				if (pack == null) continue;
 				if (pack instanceof Transfer transfer)
 				{
 					buffer.expand(transfer.payload.length);

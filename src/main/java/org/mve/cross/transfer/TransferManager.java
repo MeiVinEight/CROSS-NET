@@ -62,8 +62,17 @@ public class TransferManager
 
 	public void close()
 	{
+		boolean prev = false;
+		synchronized (this)
+		{
+			if (this.running)
+			{
+				prev = this.running;
+				this.running = false;
+			}
+		}
+		if (!prev) return;
 		CrossNet.LOG.info("Transfer close");
-		this.running = false;
 		ConnectionMapping mapping = this.network.connection(this.UID);
 		this.network.free(this.UID);
 		mapping.close();

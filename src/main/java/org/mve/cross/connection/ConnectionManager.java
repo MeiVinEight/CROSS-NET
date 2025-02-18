@@ -28,7 +28,9 @@ public class ConnectionManager
 	public static final int STAT_HANDSHAKE2  = 3;
 	public static final int STAT_ESTABLISHED = 4;
 	public static final int STAT_CLOSING     = 5;
-	private long ID = 0;
+	public static final int READ_OVERED = 0;
+	public static final int READ_LENGTH = 1;
+	public static final int READ_DATA   = 2;
 	public final NetworkManager network;
 	public SocketChannel socket;
 	private final ReentrantLock lock = new ReentrantLock();
@@ -40,6 +42,8 @@ public class ConnectionManager
 	private final DynamicArray RB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
 	private final DynamicArray LB = new DynamicArray(4);
 	private final DynamicArray WB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
+	private int RS = ConnectionManager.READ_OVERED;
+	public boolean blocking = true;
 
 	public ConnectionManager(NetworkManager network)
 	{
@@ -93,31 +97,53 @@ public class ConnectionManager
 
 	public Datapack receive() throws IOException
 	{
-		Datapack pack;
+		Datapack pack = null;
 		this.receive.lock();
 		try
 		{
-			// Read length
-			this.RB.clear();
-			this.RB.limit(4);
-			Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
-			RB.flip();
-			int length = this.RB.getInt();
-
-			// Read pack data
-			this.RB.clear();
-			this.RB.acquire(length);
-			this.RB.limit(length);
-			Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
-			this.RB.flip();
-			byte id = RB.get();
-			if (id >= ProtocolManager.CONSTRUCTOR.length)
+			switch (this.RS)
 			{
-				throw new IOException("UNKNOWN DATAPACK ID: " + id);
+				case ConnectionManager.READ_OVERED:
+				{
+					// Clear buffer and limit by 4 for read length
+					this.RB.clear();
+					this.RB.limit(4);
+					this.RS = ConnectionManager.READ_LENGTH;
+				}
+				case ConnectionManager.READ_LENGTH:
+				{
+					// Read length
+					if (this.blocking) Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
+					else this.RB.read(this.socket);
+					if (this.RB.remaining() > 0) break;
+					// Decode length
+					RB.flip();
+					int length = this.RB.getInt();
+					// Clear read buffer and limit by length for read pack data
+					this.RB.clear();
+					this.RB.acquire(length);
+					this.RB.limit(length);
+					this.RS = ConnectionManager.READ_DATA;
+				}
+				case ConnectionManager.READ_DATA:
+				{
+					// Read pack data
+					if (this.blocking) Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
+					else this.RB.read(this.socket);
+					if (this.RB.remaining() > 0) break;
+					this.RB.flip();
+					// Get pack id
+					byte id = RB.get();
+					if (id >= ProtocolManager.CONSTRUCTOR.length)
+					{
+						throw new IOException("UNKNOWN DATAPACK ID: " + id);
+					}
+					// Construct datapack
+					pack = ProtocolManager.CONSTRUCTOR[id].invoke();
+					pack.read(RB);
+					this.RS = ConnectionManager.READ_OVERED;
+				}
 			}
-			// Construct datapack
-			pack = ProtocolManager.CONSTRUCTOR[id].invoke();
-			pack.read(RB);
 		}
 		finally
 		{
@@ -173,19 +199,6 @@ public class ConnectionManager
 	public boolean established()
 	{
 		return this.status == ConnectionManager.STAT_ESTABLISHED;
-	}
-
-	public void ID(long id)
-	{
-		if (this.ID == 0)
-		{
-			this.ID = id;
-		}
-	}
-
-	public long ID()
-	{
-		return this.ID;
 	}
 
 	public static SocketChannel connect(SocketAddress address)

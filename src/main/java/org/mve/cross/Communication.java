@@ -63,11 +63,13 @@ public class Communication implements Runnable
 								CrossNet.LOG.log(Level.WARNING, null, e);
 							}
 						}
+						cm.blocking = false;
 					}
 					catch (IOException e)
 					{
 						CrossNet.LOG.warning("Communication failed");
 						CrossNet.LOG.log(Level.WARNING, null, e);
+						cm = null;
 						if (channel != null && channel.isConnected())
 						{
 							try
@@ -106,6 +108,7 @@ public class Communication implements Runnable
 				this.network.communication = null;
 				continue;
 			}
+			if (datapack == null) continue;
 			try
 			{
 				datapack.accept(this.network.communication);

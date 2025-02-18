@@ -58,6 +58,23 @@ public class ConnectionMonitor implements Runnable
 			}
 
 
+			try
+			{
+				socket.configureBlocking(false);
+			}
+			catch (IOException e)
+			{
+				CrossNet.LOG.log(Level.WARNING, "Cannot configure blocking", e);
+				try
+				{
+					socket.close();
+				}
+				catch (IOException ex)
+				{
+					CrossNet.LOG.log(Level.WARNING, null, ex);
+				}
+				continue;
+			}
 			int lp = socket.socket().getLocalPort();
 			CrossNet.LOG.info("Connection from " + socket.socket().getRemoteSocketAddress() + " at " + lp);
 			ConnectionMapping mapping = this.network.mapping();

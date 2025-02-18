@@ -91,6 +91,7 @@ public class ConnectionWaiting extends Synchronize
 
 	public void poll(ConnectionManager cm, int id)
 	{
+		cm.blocking = false;
 		ConnectionMapping mapping = this.network.connection(id);
 		mapping.status = ConnectionMapping.CONNECTED;
 		mapping.server = cm;
