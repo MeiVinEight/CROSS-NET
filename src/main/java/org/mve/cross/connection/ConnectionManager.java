@@ -38,6 +38,7 @@ public class ConnectionManager
 	public int LP;
 	private int status = ConnectionManager.STAT_CLOSED;
 	private final DynamicArray RB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
+	private final DynamicArray LB = new DynamicArray(4);
 	private final DynamicArray WB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
 
 	public ConnectionManager(NetworkManager network)
@@ -92,42 +93,64 @@ public class ConnectionManager
 
 	public Datapack receive() throws IOException
 	{
+		Datapack pack;
 		this.receive.lock();
-		this.RB.clear();
-		this.RB.limit(5);
-		Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
-		RB.flip();
-		int length = this.RB.getInt();
-		byte id = RB.get();
-		if (id >= ProtocolManager.CONSTRUCTOR.length)
+		try
 		{
-			throw new IOException("UNKNOWN DATAPACK ID: " + id);
+			// Read length
+			this.RB.clear();
+			this.RB.limit(4);
+			Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
+			RB.flip();
+			int length = this.RB.getInt();
+
+			// Read pack data
+			this.RB.clear();
+			this.RB.acquire(length);
+			this.RB.limit(length);
+			Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
+			this.RB.flip();
+			byte id = RB.get();
+			if (id >= ProtocolManager.CONSTRUCTOR.length)
+			{
+				throw new IOException("UNKNOWN DATAPACK ID: " + id);
+			}
+			// Construct datapack
+			pack = ProtocolManager.CONSTRUCTOR[id].invoke();
+			pack.read(RB);
 		}
-		this.RB.expand(length);
-		this.RB.clear();
-		this.RB.limit(length);
-		Serialization.transfer((ReadableByteChannel) this.socket, this.RB);
-		this.RB.flip();
-		Datapack pack = ProtocolManager.CONSTRUCTOR[id].invoke();
-		pack.read(RB);
-		this.receive.unlock();
-		// this.lock.unlock();
+		finally
+		{
+			this.receive.unlock();
+		}
 		return pack;
 	}
 
 	public void send(Datapack pack) throws IOException
 	{
-		// OutputStream out = this.socket.getOutputStream();
 		this.lock.lock();
-		// Serialization.W1(out, (byte) pack.ID());
-		this.WB.expand(5 + pack.length());
-		this.WB.clear();
-		this.WB.putInt(pack.length());
-		this.WB.put((byte) pack.ID());
-		pack.write(this.WB);
-		this.WB.flip();
-		Serialization.transfer((WritableByteChannel) this.socket, this.WB);
-		this.lock.unlock();
+		try
+		{
+			// Write pack
+			this.WB.clear();
+			// Write pack id
+			this.WB.put((byte) pack.ID());
+			// Write pack data
+			pack.write(this.WB);
+			this.WB.flip();
+
+			// Write pack length
+			this.LB.clear();
+			this.LB.putInt(this.WB.remaining());
+			this.LB.flip();
+
+			Serialization.transfer((WritableByteChannel) this.socket, this.LB);
+			Serialization.transfer((WritableByteChannel) this.socket, this.WB);
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
 	}
 
 	public void close()

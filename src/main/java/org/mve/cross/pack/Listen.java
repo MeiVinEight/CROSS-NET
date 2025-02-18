@@ -39,12 +39,6 @@ public class Listen extends Datapack
 	}
 
 	@Override
-	public int length()
-	{
-		return 4;
-	}
-
-	@Override
 	public void accept(ConnectionManager conn)
 	{
 		if (conn.network.type == CrossNet.SIDE_CLIENT)

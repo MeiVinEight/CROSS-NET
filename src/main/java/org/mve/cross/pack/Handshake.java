@@ -45,10 +45,4 @@ public class Handshake extends Datapack
 	{
 		return Handshake.ID;
 	}
-
-	@Override
-	public int length()
-	{
-		return 16;
-	}
 }

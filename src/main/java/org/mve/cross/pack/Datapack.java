@@ -13,6 +13,4 @@ public abstract class Datapack implements Consumer<ConnectionManager>
 	public abstract void write(DynamicArray buffer) throws IOException;
 
 	public abstract int ID();
-
-	public abstract int length();
 }

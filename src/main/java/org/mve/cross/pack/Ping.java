@@ -29,12 +29,6 @@ public class Ping extends Datapack
 	}
 
 	@Override
-	public int length()
-	{
-		return 8;
-	}
-
-	@Override
 	public void accept(ConnectionManager connectionManager)
 	{
 	}

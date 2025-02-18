@@ -32,12 +32,6 @@ public class Transfer extends Datapack
 	}
 
 	@Override
-	public int length()
-	{
-		return 4 + this.payload.length;
-	}
-
-	@Override
 	public void accept(ConnectionManager connectionManager)
 	{
 	}

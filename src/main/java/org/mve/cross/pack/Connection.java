@@ -98,10 +98,4 @@ public class Connection extends Datapack
 	{
 		return Connection.ID;
 	}
-
-	@Override
-	public int length()
-	{
-		return 6;
-	}
 }

@@ -26,12 +26,6 @@ public class Disconnect extends Datapack
 	}
 
 	@Override
-	public int length()
-	{
-		return 0;
-	}
-
-	@Override
 	public void accept(ConnectionManager connectionManager)
 	{
 	}

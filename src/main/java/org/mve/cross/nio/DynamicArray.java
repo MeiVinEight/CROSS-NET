@@ -39,6 +39,15 @@ public class DynamicArray
 		System.gc();
 	}
 
+	public void acquire(int length)
+	{
+		if (this.remaining() >= length) return;
+		length += this.buffer.position();
+		int capacity = this.capacity();
+		while (capacity < length) capacity <<= 1;
+		this.expand(capacity);
+	}
+
 	public int read(ReadableByteChannel channel) throws IOException
 	{
 		return channel.read(this.buffer);
@@ -96,26 +105,31 @@ public class DynamicArray
 
 	public void put(byte[] bytes)
 	{
+		this.acquire(bytes.length);
 		this.buffer.put(bytes);
 	}
 
 	public void put(byte x)
 	{
+		this.acquire(1);
 		this.buffer.put(x);
 	}
 
 	public void putShort(short x)
 	{
+		this.acquire(2);
 		this.buffer.putShort(x);
 	}
 
 	public void putInt(int x)
 	{
+		this.acquire(4);
 		this.buffer.putInt(x);
 	}
 
 	public void putLong(long x)
 	{
+		this.acquire(8);
 		this.buffer.putLong(x);
 	}
 }
