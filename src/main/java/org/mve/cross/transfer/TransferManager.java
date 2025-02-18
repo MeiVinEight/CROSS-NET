@@ -64,19 +64,9 @@ public class TransferManager
 	{
 		CrossNet.LOG.info("Transfer close");
 		this.running = false;
-		ConnectionMapping mapping;
-		synchronized (this.network.connection)
-		{
-			mapping = this.network.connection(this.UID);
-			if (mapping != null)
-			{
-				if (mapping.server.address.equals(this.connection.address))
-				{
-					this.network.connection(this.UID, null);
-					mapping.close();
-				}
-			}
-		}
+		ConnectionMapping mapping = this.network.connection(this.UID);
+		this.network.free(this.UID);
+		mapping.close();
 	}
 
 	public void exception(Throwable e)

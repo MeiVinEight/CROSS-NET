@@ -97,7 +97,7 @@ public class ConnectionMonitor implements Runnable
 			{
 				CrossNet.LOG.severe("Connection send failed");
 				CrossNet.LOG.log(Level.SEVERE, null, e);
-				this.network.connection(id, null);
+				this.network.free(id);
 				try
 				{
 					socket.close();

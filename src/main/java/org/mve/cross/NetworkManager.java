@@ -22,7 +22,7 @@ public class NetworkManager
 	public ConnectionManager communication;
 	// Server listen connections from all users
 	public final ConnectionMonitor[] server = new ConnectionMonitor[65536];
-	public final ConnectionMapping[] connection = new ConnectionMapping[65536];
+	private final ConnectionMapping[] connection = new ConnectionMapping[65536];
 	public final SynchronizeNET synchronize = new SynchronizeNET(this);
 	public final ConnectionWaiting waiting = new ConnectionWaiting(this);
 	private final VariableID identifier = new VariableID(1, 65535);
@@ -109,8 +109,16 @@ public class NetworkManager
 	public ConnectionMapping mapping(int id)
 	{
 		if (id == -1) return null;
-		this.connection(id, new ConnectionMapping(id));
-		return this.connection(id);
+		ConnectionMapping mapping = null;
+		synchronized (this.connection)
+		{
+			if (this.connection[id] == null)
+			{
+				mapping = new ConnectionMapping(id);
+				this.connection[id] = mapping;
+			}
+		}
+		return mapping;
 	}
 
 	public ConnectionMapping connection(int id)
@@ -118,11 +126,17 @@ public class NetworkManager
 		return this.connection[id];
 	}
 
-	public void connection(int id, ConnectionMapping obj)
+	public void free(int id)
 	{
+		ConnectionMapping mapping = null;
 		synchronized (this.connection)
 		{
-			this.connection[id] = obj;
+			if (this.connection[id] != null)
+			{
+				mapping = this.connection[id];
+				this.connection[id] = null;
+			}
 		}
+		if (mapping != null) this.identifier.free(mapping.UID);
 	}
 }
