@@ -60,8 +60,8 @@ public class ConnectionMonitor implements Runnable
 
 			int lp = socket.socket().getLocalPort();
 			CrossNet.LOG.info("Connection from " + socket.socket().getRemoteSocketAddress() + " at " + lp);
-			int id = this.network.search();
-			if (id == 0)
+			ConnectionMapping mapping = this.network.mapping();
+			if (mapping == null)
 			{
 				CrossNet.LOG.warning("Connection overflow!");
 				try
@@ -74,10 +74,9 @@ public class ConnectionMonitor implements Runnable
 				}
 				continue;
 			}
+			int id = mapping.UID;
 
-			ConnectionMapping mapping = new ConnectionMapping();
 			mapping.client = socket;
-			this.network.connection(id, mapping);
 
 			ConnectionID cid = new ConnectionID();
 			cid.ID = id;

@@ -42,8 +42,7 @@ public class Connection extends Datapack
 				return;
 			}
 
-			ConnectionMapping mapping = new ConnectionMapping();
-			conn.network.connection(this.UID, mapping);
+			ConnectionMapping mapping = conn.network.mapping(this.UID);
 
 			CrossNet.LOG.info("Connection at " + this.RP + ", create transfer connection to " + localPort);
 			SocketChannel client = ConnectionManager.connect(new InetSocketAddress(localPort));

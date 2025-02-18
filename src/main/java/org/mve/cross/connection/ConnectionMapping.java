@@ -12,9 +12,15 @@ public class ConnectionMapping
 	public static final int CONNECTED = 1;
 	public static final int CLOSEING  = 2;
 	public static final int CLOSED    = 3;
+	public final int UID;
 	public int status =  ConnectionMapping.WAITING;
 	public ConnectionManager server;
 	public SocketChannel client;
+
+	public ConnectionMapping(int uid)
+	{
+		UID = uid;
+	}
 
 	public void close()
 	{

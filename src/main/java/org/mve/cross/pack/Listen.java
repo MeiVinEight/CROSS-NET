@@ -79,15 +79,16 @@ public class Listen extends Datapack
 				ssc.bind(new InetSocketAddress(port));
 				conn.network.server[port] = new ConnectionMonitor(conn.network, ssc);
 				new Thread(conn.network.server[port]).start();
+				CrossNet.LOG.info("Listening on " + this.ON + " \u001B[1m\u001B[32mOK");
 			}
 			catch (IOException e)
 			{
 				CrossNet.LOG.warning("Cannot listen on " + port);
 				CrossNet.LOG.log(Level.WARNING, null, e);
 				response.status = STAT_DENIED;
+				CrossNet.LOG.info("Server listening on " + this.ON + " \u001B[1m\u001B[91mDENIED");
 			}
 		}
-		CrossNet.LOG.info("Listening on " + this.ON + " \u001B[1m\u001B[32mOK");
 		try
 		{
 			conn.send(response);

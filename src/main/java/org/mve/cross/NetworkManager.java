@@ -25,6 +25,7 @@ public class NetworkManager
 	public final ConnectionMapping[] connection = new ConnectionMapping[65536];
 	public final SynchronizeNET synchronize = new SynchronizeNET(this);
 	public final ConnectionWaiting waiting = new ConnectionWaiting(this);
+	private final VariableID identifier = new VariableID(1, 65535);
 	private int status;
 
 	public NetworkManager(int type)
@@ -100,6 +101,18 @@ public class NetworkManager
 		CrossNet.LOG.close();
 	}
 
+	public ConnectionMapping mapping()
+	{
+		return this.mapping(this.identifier.get());
+	}
+
+	public ConnectionMapping mapping(int id)
+	{
+		if (id == -1) return null;
+		this.connection(id, new ConnectionMapping(id));
+		return this.connection(id);
+	}
+
 	public ConnectionMapping connection(int id)
 	{
 		return this.connection[id];
@@ -111,14 +124,5 @@ public class NetworkManager
 		{
 			this.connection[id] = obj;
 		}
-	}
-
-	public int search()
-	{
-		for (int i = 1; i < this.connection.length; i++)
-		{
-			if ((this.connection[i] == null)) return i;
-		}
-		return 0;
 	}
 }

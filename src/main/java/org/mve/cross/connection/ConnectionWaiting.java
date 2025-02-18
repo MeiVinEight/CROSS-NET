@@ -26,15 +26,6 @@ public class ConnectionWaiting extends Synchronize
 	@Override
 	public void run()
 	{
-		// Not allowed on server side
-		/*
-		if (this.network.type == CrossNet.SIDE_SERVER)
-		{
-			this.cancel();
-			return;
-		}
-		*/
-
 		ConnectionID cid = this.connection.poll();
 		if (cid == null) return;
 		ConnectionMapping mapping = this.network.connection(cid.ID);
