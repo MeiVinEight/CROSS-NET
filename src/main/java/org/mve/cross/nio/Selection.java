@@ -4,7 +4,6 @@ import org.mve.cross.NetworkManager;
 
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 
 public interface Selection
 {
