@@ -76,6 +76,7 @@ public class Connection extends Datapack
 			}
 			CrossNet.LOG.info("Connection register to communication: " + conn.address);
 			conn.network.communication = conn;
+
 		}
 	}
 

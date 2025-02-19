@@ -1,5 +1,6 @@
 package org.mve.cross;
 
+import org.mve.cross.concurrent.Synchronize;
 import org.mve.cross.connection.ConnectionManager;
 import org.mve.cross.pack.Connection;
 import org.mve.cross.pack.Datapack;
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 
-public class Communication implements Runnable
+public class Communication extends Synchronize
 {
 	private final NetworkManager network;
 

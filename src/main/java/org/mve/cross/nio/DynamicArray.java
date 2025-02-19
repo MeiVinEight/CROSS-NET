@@ -11,6 +11,8 @@ public class DynamicArray
 
 	public DynamicArray(int capacity)
 	{
+		if (capacity < 0) throw new IllegalArgumentException();
+		if (capacity == 0) capacity = 1;
 		this.expand(capacity);
 	}
 
@@ -22,7 +24,7 @@ public class DynamicArray
 	public int capacity()
 	{
 		if (this.buffer != null) return this.buffer.capacity();
-		return 0;
+		return -1;
 	}
 
 	public void expand(int capacity)

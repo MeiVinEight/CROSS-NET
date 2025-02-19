@@ -4,9 +4,9 @@ import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.concurrent.Synchronize;
 import org.mve.cross.pack.Connection;
-import org.mve.cross.transfer.TransferManager;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
 import java.util.Queue;
@@ -95,6 +95,15 @@ public class ConnectionWaiting extends Synchronize
 		ConnectionMapping mapping = this.network.connection(id);
 		mapping.status = ConnectionMapping.CONNECTED;
 		mapping.server = cm;
+		try
+		{
+			mapping.server.register(this.network);
+			mapping.register(this.network);
+		}
+		catch (ClosedChannelException e)
+		{
+			CrossNet.LOG.log(Level.WARNING, "Registration failed", e);
+		}
 		CrossNet.LOG.info(
 			"Transfer connection " +
 			mapping.client.socket().getRemoteSocketAddress() +
@@ -104,7 +113,6 @@ public class ConnectionWaiting extends Synchronize
 			this.connection.size() +
 			" connection(s)"
 		);
-		new TransferManager(cm.network, id);
 	}
 
 	public void close()

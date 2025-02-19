@@ -71,8 +71,9 @@ public class Listen extends Datapack
 			{
 				ServerSocketChannel ssc = ServerSocketChannel.open();
 				ssc.bind(new InetSocketAddress(port));
+				ssc.configureBlocking(false);
 				conn.network.server[port] = new ConnectionMonitor(conn.network, ssc);
-				new Thread(conn.network.server[port]).start();
+				conn.network.server[port].register(conn.network);
 				CrossNet.LOG.info("Listening on " + this.ON + " \u001B[1m\u001B[32mOK");
 			}
 			catch (IOException e)
