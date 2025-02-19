@@ -29,7 +29,7 @@ public class NetworkManager extends Synchronize
 	// Server listen connections from frp client
 	private final TransferMonitor transfer;
 	// Communication connect between FRP server and client
-	public ConnectionManager communication;
+	public Communication communication;
 	// Server listen connections from all users
 	public final ConnectionMonitor[] server = new ConnectionMonitor[65536];
 	private final ConnectionMapping[] connection = new ConnectionMapping[65536];
@@ -63,8 +63,8 @@ public class NetworkManager extends Synchronize
 				CrossNet.LOG.info("Connecting server on " + Configuration.SERVER_PORT);
 				this.transfer = null;
 				this.status = NetworkManager.NETWORK_STAT_RUNNING;
+				this.synchronize.offer(new CommunicationWaiting(this));
 			}
-			new Thread(new Communication(this)).start();
 			this.synchronize.offer(this.waiting);
 		}
 		catch (Throwable t)
@@ -161,6 +161,13 @@ public class NetworkManager extends Synchronize
 		throws ClosedChannelException
 	{
 		SelectionKey key = channel.register(this.selector, interest, attachment);
+		this.selector.wakeup();
+		return key;
+	}
+
+	public SelectionKey register(ConnectionManager cm, int interest, Object attachment) throws ClosedChannelException
+	{
+		SelectionKey key = cm.register(this.selector, interest, attachment);
 		this.selector.wakeup();
 		return key;
 	}

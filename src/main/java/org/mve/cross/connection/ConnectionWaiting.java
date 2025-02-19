@@ -1,5 +1,6 @@
 package org.mve.cross.connection;
 
+import org.mve.cross.Communication;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.concurrent.Synchronize;
@@ -97,7 +98,7 @@ public class ConnectionWaiting extends Synchronize
 		mapping.server = cm;
 		try
 		{
-			mapping.server.register(this.network);
+			new Communication(this.network, mapping.server).register(this.network);
 			mapping.register(this.network);
 		}
 		catch (ClosedChannelException e)

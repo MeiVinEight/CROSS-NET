@@ -6,7 +6,6 @@ import org.mve.cross.NetworkManager;
 import org.mve.cross.ProtocolManager;
 import org.mve.cross.Serialization;
 import org.mve.cross.nio.DynamicArray;
-import org.mve.cross.nio.Selection;
 import org.mve.cross.pack.Datapack;
 import org.mve.cross.pack.Handshake;
 
@@ -18,15 +17,13 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NoConnectionPendingException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-public class ConnectionManager implements Selection
+public class ConnectionManager
 {
 	public static final int STAT_CLOSED      = 0;
 	public static final int STAT_CONNECTING  = 1;
@@ -49,8 +46,6 @@ public class ConnectionManager implements Selection
 	private final DynamicArray LB = new DynamicArray(4);
 	private final DynamicArray WB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
 	private int RS = ConnectionManager.READ_OVERED;
-	private final Queue<Datapack> queue = new ConcurrentLinkedQueue<>();
-	private SelectionKey key;
 	public boolean blocking = true;
 
 	public ConnectionManager(NetworkManager network)
@@ -84,13 +79,6 @@ public class ConnectionManager implements Selection
 		finally
 		{
 			this.receive.unlock();
-			if (this.status != ConnectionManager.STAT_ESTABLISHED)
-			{
-				this.status = ConnectionManager.STAT_CLOSED;
-				this.socket = null;
-				this.address = null;
-				this.LP = 0;
-			}
 		}
 	}
 
@@ -110,6 +98,14 @@ public class ConnectionManager implements Selection
 			if (!((Handshake) datapack).verify()) throw new ConnectException("Wrong Signature");
 			this.status = ConnectionManager.STAT_ESTABLISHED;
 		}
+		catch (IOException e)
+		{
+			this.status = ConnectionManager.STAT_CLOSED;
+			this.socket = null;
+			this.address = null;
+			this.LP = 0;
+			throw e;
+		}
 		finally
 		{
 			this.receive.unlock();
@@ -119,8 +115,7 @@ public class ConnectionManager implements Selection
 
 	public Datapack receive() throws IOException
 	{
-		Datapack pack = this.queue.poll();
-		if (pack != null) return pack;
+		Datapack pack = null;
 		this.receive.lock();
 		try
 		{
@@ -214,8 +209,8 @@ public class ConnectionManager implements Selection
 	{
 		if (this.status == ConnectionManager.STAT_CLOSED) return;
 
+		this.receive.lock();
 		this.status = ConnectionManager.STAT_CLOSING;
-		if (this.key != null) this.key.cancel();
 		try
 		{
 			this.socket.close();
@@ -226,6 +221,10 @@ public class ConnectionManager implements Selection
 			CrossNet.LOG.warning("Close connection failed " + this.address);
 			CrossNet.LOG.log(Level.WARNING, null, e);
 		}
+		finally
+		{
+			this.receive.unlock();
+		}
 	}
 
 	public boolean established()
@@ -233,32 +232,13 @@ public class ConnectionManager implements Selection
 		return this.status == ConnectionManager.STAT_ESTABLISHED;
 	}
 
-	@Override
-	public void register(NetworkManager network) throws ClosedChannelException
+	public SelectionKey register(Selector selector, int interest, Object attachement) throws ClosedChannelException
 	{
 		if (this.status != ConnectionManager.STAT_ESTABLISHED)
 		{
 			throw new ClosedChannelException();
 		}
-		this.key = network.register(this.socket, SelectionKey.OP_READ, this);
-	}
-
-	@Override
-	public void select(SelectionKey key)
-	{
-		this.receive.lock();
-		Datapack datapack = null;
-		try
-		{
-			datapack = this.receive();
-		}
-		catch (IOException e)
-		{
-			CrossNet.LOG.log(Level.WARNING, null, e);
-			this.close();
-		}
-		this.receive.unlock();
-		if (datapack != null) datapack.accept(this);
+		return this.socket.register(selector, interest, attachement);
 	}
 
 	public static SocketChannel connect(SocketAddress address)

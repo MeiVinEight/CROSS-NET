@@ -137,6 +137,8 @@ public class ConnectionMonitor implements Selection
 			CrossNet.LOG.severe("Connection send failed");
 			CrossNet.LOG.log(Level.SEVERE, null, e);
 			this.network.free(id);
+			this.network.communication.close();
+			this.network.communication = null;
 			try
 			{
 				socket.close();

@@ -1,5 +1,6 @@
 package org.mve.cross.pack;
 
+import org.mve.cross.Communication;
 import org.mve.cross.Configuration;
 import org.mve.cross.CrossNet;
 import org.mve.cross.connection.ConnectionID;
@@ -10,7 +11,9 @@ import org.mve.cross.nio.DynamicArray;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
 public class Connection extends Datapack
 {
@@ -75,8 +78,16 @@ public class Connection extends Datapack
 				return;
 			}
 			CrossNet.LOG.info("Connection register to communication: " + conn.address);
-			conn.network.communication = conn;
-
+			Communication com = new Communication(conn.network, conn);
+			try
+			{
+				com.register(conn.network);
+				conn.network.communication = com;
+			}
+			catch (ClosedChannelException e)
+			{
+				CrossNet.LOG.log(Level.WARNING, null, e);
+			}
 		}
 	}
 

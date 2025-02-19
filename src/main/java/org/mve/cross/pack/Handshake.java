@@ -26,6 +26,11 @@ public class Handshake extends Datapack
 	{
 	}
 
+	public boolean verify()
+	{
+		return new UUID(this.most, this.least).equals(Handshake.SIGNATURE);
+	}
+
 	@Override
 	public void read(DynamicArray buffer) throws IOException
 	{

@@ -60,7 +60,12 @@ public class Configuration
 			}
 			SERVER_ADDRESS = CrossNet.PROPERTIES.get(KEY_SERVER_ADDRESS).getAsString();
 			SERVER_PORT = CrossNet.PROPERTIES.get(KEY_SERVER_PORT).getAsInt();
-			COMMUNICATION_CONNECT = CrossNet.PROPERTIES.get(KEY_COMMUNICATION).getAsJsonObject().get(KEY_COMMUNICATION_CONNECT).getAsInt();
+			COMMUNICATION_CONNECT = CrossNet
+				.PROPERTIES
+				.get(KEY_COMMUNICATION)
+				.getAsJsonObject()
+				.get(KEY_COMMUNICATION_CONNECT)
+				.getAsInt();
 		}
 		catch (Throwable e)
 		{
