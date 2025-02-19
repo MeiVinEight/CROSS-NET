@@ -67,6 +67,7 @@ public class ConnectionManager implements Selection
 	{
 		try
 		{
+			this.receive.lock();
 			this.status = ConnectionManager.STAT_CONNECTING;
 			this.socket = channel;
 			this.address = (InetSocketAddress) channel.getRemoteAddress();
@@ -77,21 +78,11 @@ public class ConnectionManager implements Selection
 			this.send(handshake);
 
 			this.status = ConnectionManager.STAT_HANDSHAKE2;
-			Datapack pack = this.receive();
-			if (!(pack instanceof Handshake))
-			{
-				throw new ConnectException("Wrong Handshake");
-			}
-			handshake = (Handshake) pack;
-			if (!new UUID(handshake.most, handshake.least).equals(Handshake.SIGNATURE))
-			{
-				throw new ConnectException("Wrong Signature");
-			}
-
-			this.status = ConnectionManager.STAT_ESTABLISHED;
+			this.finish();
 		}
 		finally
 		{
+			this.receive.unlock();
 			if (this.status != ConnectionManager.STAT_ESTABLISHED)
 			{
 				this.status = ConnectionManager.STAT_CLOSED;
@@ -100,6 +91,29 @@ public class ConnectionManager implements Selection
 				this.LP = 0;
 			}
 		}
+	}
+
+	public boolean finish() throws IOException
+	{
+		if (this.status > ConnectionManager.STAT_HANDSHAKE2) return true;
+		if (this.status == ConnectionManager.STAT_CLOSED) throw new ClosedChannelException();
+		if (this.status < ConnectionManager.STAT_HANDSHAKE2) throw new NoConnectionPendingException();
+
+		this.receive.lock();
+		try
+		{
+			Datapack datapack = this.receive();
+			while (this.blocking && (datapack == null)) this.receive();
+			if (datapack == null) return false;
+			if (!(datapack instanceof Handshake)) throw new ConnectException("Wrong Handshake");
+			if (!((Handshake) datapack).verify()) throw new ConnectException("Wrong Signature");
+			this.status = ConnectionManager.STAT_ESTABLISHED;
+		}
+		finally
+		{
+			this.receive.unlock();
+		}
+		return true;
 	}
 
 	public Datapack receive() throws IOException
