@@ -4,7 +4,7 @@
 	"server-port": 12138,
 	"communication":
 	{
-		"connect": 10000
+		"timeout": 10000
 	},
 	"mapping":
 	[

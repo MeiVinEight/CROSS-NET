@@ -19,7 +19,7 @@ public class Configuration
 	private static final String KEY_MAPPING_LOCALE_PORT = "locale-port";
 	private static final String KEY_MAPPING_TIMEOUT = "timeout";
 	private static final String KEY_COMMUNICATION = "communication";
-	private static final String KEY_COMMUNICATION_CONNECT = "connect";
+	private static final String KEY_COMMUNICATION_TIMEOUT = "timeout";
 	public static final Map<Integer, AddressMapping> MAPPING = new HashMap<>();
 	public static final String SERVER_ADDRESS;
 	public static final int SERVER_PORT;
@@ -64,7 +64,7 @@ public class Configuration
 				.PROPERTIES
 				.get(KEY_COMMUNICATION)
 				.getAsJsonObject()
-				.get(KEY_COMMUNICATION_CONNECT)
+				.get(KEY_COMMUNICATION_TIMEOUT)
 				.getAsInt();
 		}
 		catch (Throwable e)
