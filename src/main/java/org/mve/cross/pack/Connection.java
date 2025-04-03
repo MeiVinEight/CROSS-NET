@@ -10,7 +10,6 @@ import org.mve.cross.nio.DynamicArray;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 
 public class Connection extends Datapack
@@ -83,21 +82,14 @@ public class Connection extends Datapack
 							break CONNECTING;
 						}
 
-						ConnectionMapping mapping = conn.network.mapping(this.UID);
-
-						SocketChannel client = ConnectionManager.connect(new InetSocketAddress(localPort));
-						if (client == null)
-						{
-							CrossNet.LOG.warning("Could not connect to " + localPort);
-							mapping.close();
-							break CONNECTING;
-						}
 						failed = false;
-						mapping.client = client;
-
 						ConnectionID cid = new ConnectionID();
-						cid.server = conn.address;
+						cid.locale = new InetSocketAddress(localPort);
+						cid.remote = conn.address;
 						cid.ID = this.UID;
+
+						ConnectionMapping mapping = conn.network.mapping(this.UID);
+						mapping.status = ConnectionMapping.WAITING;
 						conn.network.waiting.offer(cid);
 					}
 					if (failed)

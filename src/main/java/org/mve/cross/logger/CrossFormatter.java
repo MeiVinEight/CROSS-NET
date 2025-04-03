@@ -30,38 +30,39 @@ public class CrossFormatter extends Formatter
 	{
 		StringBuilder builder = new StringBuilder();
 
-		String clear = "";
-		String color = "";
-		if (this.type == CrossFormatter.FORMAT_TYPE_CONSOLE)
+		boolean console = type == FORMAT_TYPE_CONSOLE;
+		String level = record.getLevel().toString();
+		String clear = "\033[0m";
+		String color = clear;
+		if (record.getLevel() == Level.SEVERE)
 		{
-			clear = "\033[0m";
-			if (record.getLevel() == Level.SEVERE)
-			{
-				color = ("\u001B[1m\u001B[91m");
-			}
-			else if (record.getLevel() == Level.WARNING)
-			{
-				color = ("\u001B[1m\u001B[33m");
-			}
-			else if (record.getLevel() == Level.INFO)
-			{
-				color = ("\u001B[1m\u001B[32m");
-			}
-			else if (record.getLevel() == Level.FINE)
-			{
-				color = ("\u001B[1m\u001B[94m");
-			}
-			else if (record.getLevel() == Level.CONFIG)
-			{
-				color = ("\u001B[1m\u001B[35m");
-			}
+			color = ("\u001B[1m\u001B[91m");
+			level = "ERRO";
+		}
+		else if (record.getLevel() == Level.WARNING)
+		{
+			color = ("\u001B[1m\u001B[33m");
+			level = "WARN";
+		}
+		else if (record.getLevel() == Level.INFO)
+		{
+			color = ("\u001B[1m\u001B[32m");
+		}
+		else if (record.getLevel() == Level.FINE)
+		{
+			color = ("\u001B[1m\u001B[94m");
+		}
+		else if (record.getLevel() == Level.CONFIG)
+		{
+			color = ("\u001B[1m\u001B[35m");
+			level = "CONF";
 		}
 		builder
 			.append('[')
 			.append(DATE_FORMAT.format(new Date(record.getMillis()))).append("] [")
-			.append(color)
-			.append(record.getLevel())
-			.append(clear)
+			.append(console ? color : "")
+			.append(level)
+			.append(console ? clear : "")
 			.append("] [")
 			.append(Thread.currentThread().getName())
 			.append("]");
@@ -82,7 +83,7 @@ public class CrossFormatter extends Formatter
 		{
 			builder.deleteCharAt(builder.length() - 1);
 		}
-		if (this.type == CrossFormatter.FORMAT_TYPE_CONSOLE) builder.append("\u001B[0m");
+		if (console) builder.append("\u001B[0m");
 		return builder.append("\n").toString();
 	}
 }

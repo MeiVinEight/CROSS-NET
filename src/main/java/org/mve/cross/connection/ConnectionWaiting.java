@@ -4,13 +4,11 @@ import org.mve.cross.Communication;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.concurrent.Synchronize;
-import org.mve.cross.net.Addressing;
 import org.mve.cross.pack.Connection;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,52 +31,46 @@ public class ConnectionWaiting extends Synchronize
 		if (cid == null) return;
 		ConnectionMapping mapping = this.network.connection(cid.ID);
 		if (mapping == null) return;
-		if (mapping.status != ConnectionMapping.WAITING) return;
+		if (!mapping.waiting()) return;
 		if (this.network.type == CrossNet.SIDE_SERVER)
 		{
 			this.connection.offer(cid);
 			return;
 		}
 
-		SocketChannel serverChannel = null;
-		ConnectionManager cm;
+		boolean continu;
 		try
 		{
-			serverChannel = SocketChannel.open();
-			serverChannel.configureBlocking(false);
-			serverChannel.connect(cid.server);
-			while (!serverChannel.finishConnect()) Thread.yield();
-			cm = new ConnectionManager(this.network, serverChannel);
-			Connection pack = new Connection();
-			pack.RP = (short) mapping.client.socket().getPort();
-			pack.UID = cid.ID;
-			pack.type = Connection.TYPE_CONNECTION;
-			cm.send(pack);
+			continu = cid.connect(this.network, mapping);
 		}
 		catch (IOException e)
 		{
-			String msg = MessageFormat.format("[{0}] Connecting {1} error", cid.ID, cid.server);
-			CrossNet.LOG.log(Level.WARNING, msg, e);
-			if (serverChannel != null)
+			String msg = MessageFormat.format("[{0}] Connection {1} {2}", cid.ID, cid.locale, e.getMessage());
+			CrossNet.LOG.warning(msg);
+			cid.status = ConnectionID.CLOSED;
+			mapping.close();
+			Connection signal = new Connection();
+			signal.type = Connection.TYPE_CLOSE;
+			signal.UID = cid.ID;
+			Communication com = this.network.communication;
+			try
 			{
-				try
-				{
-					serverChannel.close();
-				}
-				catch (IOException ex)
-				{
-					CrossNet.LOG.log(Level.WARNING, null, ex);
-				}
+				com.send(signal);
 			}
-			cm = null;
+			catch (IOException ex)
+			{
+				CrossNet.LOG.log(Level.WARNING, "Could not send signal close", ex);
+			}
+			return;
 		}
 
-		if (cm == null)
+
+		if (continu)
 		{
 			this.connection.offer(cid);
 			return;
 		}
-		this.poll(cm, cid.ID);
+		this.poll(cid.connection, cid.ID);
 	}
 
 	public void offer(ConnectionID conn)
@@ -86,7 +78,7 @@ public class ConnectionWaiting extends Synchronize
 		if (conn == null) return;
 
 		this.connection.offer(conn);
-		SocketAddress addr = Addressing.address(this.network.connection(conn.ID).client);
+		SocketAddress addr = conn.locale;
 		int count = this.connection.size();
 		String msg = MessageFormat.format("[{0}] Waiting for {1} ({2})", conn.ID, addr, count);
 		CrossNet.LOG.info(msg);
@@ -96,6 +88,7 @@ public class ConnectionWaiting extends Synchronize
 	{
 		cm.blocking = false;
 		ConnectionMapping mapping = this.network.connection(id);
+		if (!mapping.waiting()) return;
 		mapping.status = ConnectionMapping.CONNECTED;
 		mapping.server = cm;
 		try

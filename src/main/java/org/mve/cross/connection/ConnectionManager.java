@@ -294,21 +294,4 @@ public class ConnectionManager
 		}
 		return this.socket.register(selector, interest, attachement);
 	}
-
-	public static SocketChannel connect(SocketAddress address)
-	{
-		try
-		{
-			SocketChannel channel = SocketChannel.open();
-			channel.configureBlocking(false);
-			channel.connect(address);
-			while (!channel.finishConnect()) Thread.yield();
-			return channel;
-		}
-		catch (IOException e)
-		{
-			CrossNet.LOG.log(Level.WARNING, null, e);
-		}
-		return null;
-	}
 }

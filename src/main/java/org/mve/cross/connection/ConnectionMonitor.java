@@ -2,6 +2,7 @@ package org.mve.cross.connection;
 
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
+import org.mve.cross.net.Addressing;
 import org.mve.cross.nio.Selection;
 import org.mve.cross.pack.Connection;
 
@@ -99,8 +100,10 @@ public class ConnectionMonitor implements Selection
 		int id = mapping.UID;
 
 		mapping.client = socket;
+		mapping.status = ConnectionMapping.WAITING;
 
 		ConnectionID cid = new ConnectionID();
+		cid.locale = Addressing.address(socket);
 		cid.ID = id;
 		this.network.waiting.offer(cid);
 

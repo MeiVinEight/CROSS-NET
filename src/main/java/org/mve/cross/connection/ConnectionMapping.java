@@ -14,15 +14,15 @@ import java.util.logging.Level;
 
 public class ConnectionMapping implements Selection
 {
-	public static final int WAITING   = 0;
-	public static final int CONNECTED = 1;
-	public static final int CLOSING   = 2;
-	public static final int CLOSED    = 3;
+	public static final int CLOSED    = 0;
+	public static final int WAITING   = 1;
+	public static final int CONNECTED = 2;
+	public static final int CLOSING   = 3;
 	private final DynamicArray array = new DynamicArray(1024 * 1024);
 	private final NetworkManager network;
 	private SelectionKey key;
 	public final int UID;
-	public int status =  ConnectionMapping.WAITING;
+	public int status = ConnectionMapping.CLOSED;
 	public ConnectionManager server;
 	public SocketChannel client;
 
@@ -30,6 +30,11 @@ public class ConnectionMapping implements Selection
 	{
 		this.network = network;
 		UID = uid;
+	}
+
+	public boolean waiting()
+	{
+		return this.status == ConnectionMapping.WAITING;
 	}
 
 	public void close()
