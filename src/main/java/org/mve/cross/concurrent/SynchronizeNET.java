@@ -8,7 +8,7 @@ import java.util.concurrent.locks.LockSupport;
 
 public class SynchronizeNET implements Runnable
 {
-	private static final long PERIOD_MS = 50;
+	public static final long PERIOD_MS = 50;
 	public final NetworkManager network;
 	private final Queue<Synchronize> queue = new ConcurrentLinkedQueue<>();
 	private boolean running = true;
@@ -21,7 +21,7 @@ public class SynchronizeNET implements Runnable
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("Synchronize");
+		Thread.currentThread().setName("Synchro");
 		long nextTime = System.nanoTime() + (SynchronizeNET.PERIOD_MS * 1000000);
 		while (this.running)
 		{

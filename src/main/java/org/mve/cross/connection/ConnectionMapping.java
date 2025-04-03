@@ -34,22 +34,14 @@ public class ConnectionMapping implements Selection
 
 	public void close()
 	{
+		if (this.status == ConnectionMapping.CLOSED) return;
 		this.status = ConnectionMapping.CLOSING;
+		CrossNet.LOG.info("[" + this.UID + "] Connection closing");
 		if (this.key != null) this.key.cancel();
-		CrossNet.LOG.info(
-			"Connection " +
-			this.server.address +
-			" close"
-		);
-		this.server.close();
-		CrossNet.LOG.info(
-			"Connection " +
-			this.client.socket().getRemoteSocketAddress() +
-			" close"
-		);
+		if (this.server != null) this.server.close();
 		try
 		{
-			this.client.close();
+			if (this.client != null) this.client.close();
 		}
 		catch (IOException e)
 		{
@@ -99,7 +91,7 @@ public class ConnectionMapping implements Selection
 		}
 		catch (IOException e)
 		{
-			CrossNet.LOG.log(Level.WARNING, null, e);
+			this.close();
 		}
 	}
 }

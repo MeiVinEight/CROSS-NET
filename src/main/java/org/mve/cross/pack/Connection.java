@@ -10,7 +10,6 @@ import org.mve.cross.nio.DynamicArray;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
@@ -27,7 +26,7 @@ public class Connection extends Datapack
 	{
 		if (!conn.established())
 		{
-			CrossNet.LOG.severe("Connection: REQUIRED ESTABLISHED");
+			CrossNet.LOG.severe("Connection not established");
 			return;
 		}
 		if (conn.network.type == CrossNet.SIDE_CLIENT)
@@ -47,7 +46,6 @@ public class Connection extends Datapack
 
 			ConnectionMapping mapping = conn.network.mapping(this.UID);
 
-			CrossNet.LOG.info("Connection at " + this.RP + ", create transfer connection to " + localPort);
 			SocketChannel client = ConnectionManager.connect(new InetSocketAddress(localPort));
 			if (client == null)
 			{
@@ -56,9 +54,8 @@ public class Connection extends Datapack
 			}
 			mapping.client = client;
 
-			SocketAddress server = conn.address;
 			ConnectionID cid = new ConnectionID();
-			cid.server = server;
+			cid.server = conn.address;
 			cid.ID = this.UID;
 			conn.network.waiting.offer(cid);
 		}
@@ -78,7 +75,7 @@ public class Connection extends Datapack
 				return;
 			}
 			CrossNet.LOG.info("Connection register to communication: " + conn.address);
-			Communication com = new Communication(conn.network, conn);
+			Communication com = new Communication(conn.network, conn, this.UID);
 			try
 			{
 				com.register(conn.network);

@@ -63,7 +63,8 @@ public class NetworkManager extends Synchronize
 				CrossNet.LOG.info("Connecting server on " + Configuration.SERVER_PORT);
 				this.transfer = null;
 				this.status = NetworkManager.NETWORK_STAT_RUNNING;
-				this.synchronize.offer(new CommunicationWaiting(this));
+				long period = Configuration.COMMUNICATION_CONNECT / SynchronizeNET.PERIOD_MS;
+				this.synchronize.offer(new CommunicationWaiting(this, period));
 			}
 			this.synchronize.offer(this.waiting);
 		}
@@ -123,9 +124,9 @@ public class NetworkManager extends Synchronize
 		{
 			if (this.connection[id] == null)
 			{
-				mapping = new ConnectionMapping(this, id);
-				this.connection[id] = mapping;
+				this.connection[id] = new ConnectionMapping(this, id);
 			}
+			mapping = this.connection[id];
 		}
 		return mapping;
 	}

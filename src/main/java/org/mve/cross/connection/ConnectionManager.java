@@ -7,6 +7,7 @@ import org.mve.cross.ProtocolManager;
 import org.mve.cross.Serialization;
 import org.mve.cross.nio.DynamicArray;
 import org.mve.cross.pack.Datapack;
+import org.mve.cross.pack.Disconnect;
 import org.mve.cross.pack.Handshake;
 
 import java.io.IOException;
@@ -30,7 +31,6 @@ public class ConnectionManager
 	public static final int STAT_HANDSHAKE1  = 2;
 	public static final int STAT_HANDSHAKE2  = 3;
 	public static final int STAT_ESTABLISHED = 4;
-	public static final int STAT_CLOSING     = 5;
 	public static final int READ_OVERED = 0;
 	public static final int READ_LENGTH = 1;
 	public static final int READ_DATA   = 2;
@@ -47,6 +47,8 @@ public class ConnectionManager
 	private final DynamicArray WB = new DynamicArray(Configuration.DEFAULT_BUFFER_SIZE);
 	private int RS = ConnectionManager.READ_OVERED;
 	public boolean blocking = true;
+	private boolean reading = false;
+	private boolean writing = false;
 
 	public ConnectionManager(NetworkManager network)
 	{
@@ -64,16 +66,20 @@ public class ConnectionManager
 		try
 		{
 			this.receive.lock();
+			this.reading = false;
+			this.writing = false;
 			this.status = ConnectionManager.STAT_CONNECTING;
 			this.socket = channel;
 			this.address = (InetSocketAddress) channel.getRemoteAddress();
 			this.LP = ((InetSocketAddress) this.socket.getLocalAddress()).getPort();
 
 			this.status = ConnectionManager.STAT_HANDSHAKE1;
+			this.writing = true;
 			Handshake handshake = new Handshake();
 			this.send(handshake);
 
 			this.status = ConnectionManager.STAT_HANDSHAKE2;
+			this.reading = true;
 			this.finish();
 		}
 		finally
@@ -84,13 +90,14 @@ public class ConnectionManager
 
 	public boolean finish() throws IOException
 	{
-		if (this.status > ConnectionManager.STAT_HANDSHAKE2) return true;
-		if (this.status == ConnectionManager.STAT_CLOSED) throw new ClosedChannelException();
-		if (this.status < ConnectionManager.STAT_HANDSHAKE2) throw new NoConnectionPendingException();
-
-		this.receive.lock();
 		try
 		{
+			this.receive.lock();
+
+			if (this.status > ConnectionManager.STAT_HANDSHAKE2) return true;
+			if (this.status == ConnectionManager.STAT_CLOSED) throw new ClosedChannelException();
+			if (this.status < ConnectionManager.STAT_HANDSHAKE2) throw new NoConnectionPendingException();
+
 			Datapack datapack = this.receive();
 			while (this.blocking && (datapack == null)) this.receive();
 			if (datapack == null) return false;
@@ -98,7 +105,7 @@ public class ConnectionManager
 			if (!((Handshake) datapack).verify()) throw new ConnectException("Wrong Signature");
 			this.status = ConnectionManager.STAT_ESTABLISHED;
 		}
-		catch (IOException e)
+		catch (IOException | RuntimeException e)
 		{
 			this.status = ConnectionManager.STAT_CLOSED;
 			this.socket = null;
@@ -116,9 +123,11 @@ public class ConnectionManager
 	public Datapack receive() throws IOException
 	{
 		Datapack pack = null;
-		this.receive.lock();
 		try
 		{
+			this.receive.lock();
+
+			if (!this.reading) throw new ClosedChannelException();
 			switch (this.RS)
 			{
 				case ConnectionManager.READ_OVERED:
@@ -165,8 +174,9 @@ public class ConnectionManager
 						throw new IOException("UNKNOWN DATAPACK ID: " + id);
 					}
 					// Construct datapack
-					pack = ProtocolManager.CONSTRUCTOR[id].invoke();
-					pack.read(RB);
+					Datapack tmp = ProtocolManager.CONSTRUCTOR[id].invoke();
+					tmp.read(RB);
+					pack = tmp;
 					this.RS = ConnectionManager.READ_OVERED;
 				}
 			}
@@ -175,14 +185,22 @@ public class ConnectionManager
 		{
 			this.receive.unlock();
 		}
+
+		if (pack != null && pack.ID() == Disconnect.ID)
+		{
+			pack.accept(this);
+			pack = null;
+		}
 		return pack;
 	}
 
 	public void send(Datapack pack) throws IOException
 	{
-		this.lock.lock();
 		try
 		{
+			this.lock.lock();
+
+			if (!this.writing) throw new ClosedChannelException();
 			// Write pack
 			this.WB.clear();
 			// Write pack id
@@ -205,14 +223,48 @@ public class ConnectionManager
 		}
 	}
 
-	public void close()
+	public void shutdown(boolean reading) throws IOException
 	{
-		if (this.status == ConnectionManager.STAT_CLOSED) return;
-
-		this.receive.lock();
-		this.status = ConnectionManager.STAT_CLOSING;
 		try
 		{
+			this.lock.lock();
+			if (reading) this.reading = false;
+			else
+			{
+				if (this.writing)
+				{
+					Disconnect dis = new Disconnect();
+					// this.send(dis);
+					this.writing = false;
+				}
+			}
+		}
+		finally
+		{
+			this.lock.unlock();
+		}
+	}
+
+	public void close()
+	{
+		try
+		{
+			this.receive.lock();
+
+			if (this.status == ConnectionManager.STAT_CLOSED) return;
+
+			try
+			{
+				this.shutdown(false);
+			}
+			catch (IOException ignored)
+			{
+				this.writing = false;
+			}
+
+			this.shutdown(true);
+			if (this.reading) return;
+
 			this.socket.close();
 			this.status = ConnectionManager.STAT_CLOSED;
 		}

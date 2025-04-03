@@ -64,20 +64,6 @@ public class ConnectionMonitor implements Selection
 			}
 		}
 		if (socket == null) return;
-		String msg = MessageFormat.format("Accepted {0} at {1}", socket.socket().getRemoteSocketAddress(), this.ID);
-		CrossNet.LOG.info(msg);
-		if (this.network.communication == null)
-		{
-			try
-			{
-				socket.close();
-			}
-			catch (IOException e)
-			{
-				CrossNet.LOG.log(Level.WARNING, null, e);
-			}
-			return;
-		}
 
 
 		try
@@ -98,7 +84,6 @@ public class ConnectionMonitor implements Selection
 			return;
 		}
 		int lp = socket.socket().getLocalPort();
-		CrossNet.LOG.info("Connection from " + socket.socket().getRemoteSocketAddress() + " at " + lp);
 		ConnectionMapping mapping = this.network.mapping();
 		if (mapping == null)
 		{
@@ -147,6 +132,7 @@ public class ConnectionMonitor implements Selection
 			{
 				CrossNet.LOG.log(Level.SEVERE, null, ex);
 			}
+			mapping.close();
 		}
 	}
 }

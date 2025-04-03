@@ -21,14 +21,18 @@ public class CommunicationWaiting extends Synchronize
 	private static final int HANDSHAKING = 4;
 	private static final int REGISTERING = 5;
 	private final NetworkManager network;
+	private final long period;
 	private long timestamp;
 	private int status = CommunicationWaiting.WAITING;
 	private SocketChannel channel;
 	private ConnectionManager connection;
 
-	public CommunicationWaiting(NetworkManager network)
+	public CommunicationWaiting(NetworkManager network, long period)
 	{
+		if (period <= 0) period = 1;
 		this.network = network;
+		this.period = period;
+		super.period = this.period;
 	}
 
 	@Override
@@ -41,6 +45,7 @@ public class CommunicationWaiting extends Synchronize
 		}
 
 
+		super.period = 1;
 		try
 		{
 			switch (this.status)
@@ -51,7 +56,7 @@ public class CommunicationWaiting extends Synchronize
 				this.status = CommunicationWaiting.CONNECTING;
 				case CommunicationWaiting.CONNECTING:
 				InetAddress addr = InetAddress.getByName(Configuration.SERVER_ADDRESS);
-				CrossNet.LOG.info("Connection " + addr + ":" + Configuration.SERVER_PORT);
+				CrossNet.LOG.info("Connection " + addr.getCanonicalHostName() + ":" + Configuration.SERVER_PORT);
 				this.channel = SocketChannel.open();
 				this.channel.configureBlocking(false);
 				this.channel.connect(new InetSocketAddress(addr, Configuration.SERVER_PORT));
@@ -94,9 +99,9 @@ public class CommunicationWaiting extends Synchronize
 					listen.ON = (short) listenPort;
 					this.connection.send(listen);
 				}
-				Communication com = new Communication(this.network, this.connection);
+				Communication com = new Communication(this.network, this.connection, 0);
 				com.register(this.network);
-				this.network.communication = new Communication(this.network, this.connection);
+				this.network.communication = com;
 				this.channel = null;
 				this.connection = null;
 				this.status = CommunicationWaiting.WAITING;
@@ -111,6 +116,7 @@ public class CommunicationWaiting extends Synchronize
 
 	private void reset()
 	{
+		super.period = this.period;
 		this.status = CommunicationWaiting.WAITING;
 		if (this.channel != null)
 		{

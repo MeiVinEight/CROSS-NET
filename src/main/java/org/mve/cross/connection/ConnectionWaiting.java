@@ -4,9 +4,11 @@ import org.mve.cross.Communication;
 import org.mve.cross.CrossNet;
 import org.mve.cross.NetworkManager;
 import org.mve.cross.concurrent.Synchronize;
+import org.mve.cross.net.Addressing;
 import org.mve.cross.pack.Connection;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
@@ -42,14 +44,11 @@ public class ConnectionWaiting extends Synchronize
 		ConnectionManager cm;
 		try
 		{
-			CrossNet.LOG.info(MessageFormat.format("[{0}] connect to server {1}", cid.ID, cid.server));
 			serverChannel = SocketChannel.open();
 			serverChannel.configureBlocking(false);
 			serverChannel.connect(cid.server);
 			while (!serverChannel.finishConnect()) Thread.yield();
-			CrossNet.LOG.info(MessageFormat.format("[{0}] Handshake with server {1}", cid.ID, cid.server));
 			cm = new ConnectionManager(this.network, serverChannel);
-			CrossNet.LOG.info(MessageFormat.format("[{0}] Talk to server {1}", cid.ID, cid.server));
 			Connection pack = new Connection();
 			pack.RP = (short) mapping.client.socket().getPort();
 			pack.UID = cid.ID;
@@ -57,7 +56,8 @@ public class ConnectionWaiting extends Synchronize
 		}
 		catch (IOException e)
 		{
-			CrossNet.LOG.info(MessageFormat.format("[{0}] failed handshake with server {1}", cid.ID, cid.server));
+			String msg = MessageFormat.format("[{0}] Connecting {1} error", cid.ID, cid.server);
+			CrossNet.LOG.log(Level.WARNING, msg, e);
 			if (serverChannel != null)
 			{
 				try
@@ -72,7 +72,11 @@ public class ConnectionWaiting extends Synchronize
 			cm = null;
 		}
 
-		if (cm == null) return;
+		if (cm == null)
+		{
+			this.connection.offer(cid);
+			return;
+		}
 		this.poll(cm, cid.ID);
 	}
 
@@ -81,13 +85,10 @@ public class ConnectionWaiting extends Synchronize
 		if (conn == null) return;
 
 		this.connection.offer(conn);
-		String message = "Connection waiting for [" + conn.ID + "]";
-		if (conn.server != null)
-		{
-			message += " " + conn.server;
-		}
-		message += ", " + this.connection.size() + " connection(s)";
-		CrossNet.LOG.info(message);
+		SocketAddress addr = Addressing.address(this.network.connection(conn.ID).client);
+		int count = this.connection.size();
+		String msg = MessageFormat.format("[{0}] Waiting for {1} ({2})", conn.ID, addr, count);
+		CrossNet.LOG.info(msg);
 	}
 
 	public void poll(ConnectionManager cm, int id)
@@ -98,22 +99,16 @@ public class ConnectionWaiting extends Synchronize
 		mapping.server = cm;
 		try
 		{
-			new Communication(this.network, mapping.server).register(this.network);
+			new Communication(this.network, mapping.server, id).register(this.network);
 			mapping.register(this.network);
 		}
 		catch (ClosedChannelException e)
 		{
 			CrossNet.LOG.log(Level.WARNING, "Registration failed", e);
 		}
-		CrossNet.LOG.info(
-			"Transfer connection " +
-			mapping.client.socket().getRemoteSocketAddress() +
-			" - " +
-			cm.address +
-			", " +
-			this.connection.size() +
-			" connection(s)"
-		);
+		int count = this.connection.size();
+		String msg = MessageFormat.format("[{0}] Connection {1} ({2})", id, cm.address, count);
+		CrossNet.LOG.info(msg);
 	}
 
 	public void close()

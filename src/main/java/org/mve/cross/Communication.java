@@ -1,6 +1,7 @@
 package org.mve.cross;
 
 import org.mve.cross.connection.ConnectionManager;
+import org.mve.cross.connection.ConnectionMapping;
 import org.mve.cross.nio.Selection;
 import org.mve.cross.pack.Datapack;
 
@@ -13,18 +14,25 @@ public class Communication implements Selection
 {
 	private final NetworkManager network;
 	private final ConnectionManager connection;
+	private final int UID;
 	private SelectionKey selection;
 
-	public Communication(NetworkManager network, ConnectionManager connection)
+	public Communication(NetworkManager network, ConnectionManager connection, int uid)
 	{
 		this.network = network;
 		this.connection = connection;
+		this.UID = uid;
 	}
 
 	public void close()
 	{
 		if (this.selection != null) this.selection.cancel();
 		this.connection.close();
+		ConnectionMapping mapping = this.network.connection(this.UID);
+		if (mapping != null)
+		{
+			mapping.close();
+		}
 	}
 
 	@Override
@@ -43,10 +51,18 @@ public class Communication implements Selection
 		}
 		catch (IOException e)
 		{
-			CrossNet.LOG.log(Level.WARNING, "Communication " + this.connection.address + " closed", e);
-			this.network.communication.close();
-			this.network.communication = null;
+			if (this.UID == 0)
+			{
+				CrossNet.LOG.log(Level.WARNING, "Communication " + this.connection.address + " closed", e);
+				this.network.communication = null;
+			}
+			this.close();
 			return;
+		}
+
+		if (!this.connection.established())
+		{
+			this.close();
 		}
 
 		try
