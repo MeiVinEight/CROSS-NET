@@ -30,10 +30,11 @@ public class CrossFormatter extends Formatter
 	{
 		StringBuilder builder = new StringBuilder();
 
-		String clear = "\u001B[0m";
-		String color = clear;
+		String clear = "";
+		String color = "";
 		if (this.type == CrossFormatter.FORMAT_TYPE_CONSOLE)
 		{
+			clear = "\033[0m";
 			if (record.getLevel() == Level.SEVERE)
 			{
 				color = ("\u001B[1m\u001B[91m");
