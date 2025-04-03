@@ -52,6 +52,7 @@ public class ConnectionWaiting extends Synchronize
 			Connection pack = new Connection();
 			pack.RP = (short) mapping.client.socket().getPort();
 			pack.UID = cid.ID;
+			pack.type = Connection.TYPE_CONNECTION;
 			cm.send(pack);
 		}
 		catch (IOException e)

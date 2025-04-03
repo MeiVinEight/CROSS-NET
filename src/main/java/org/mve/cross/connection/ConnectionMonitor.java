@@ -109,6 +109,7 @@ public class ConnectionMonitor implements Selection
 			Connection conn = new Connection();
 			conn.RP = (short) lp;
 			conn.UID = id;
+			conn.type = Connection.TYPE_CONNECTION;
 			if (this.network.communication == null)
 			{
 				throw new IOException("Communication is null");

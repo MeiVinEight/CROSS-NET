@@ -89,7 +89,9 @@ public class CommunicationWaiting extends Synchronize
 
 				this.status = CommunicationWaiting.REGISTERING;
 				case CommunicationWaiting.REGISTERING:
-				this.connection.send(new Connection());
+				Connection pack = new Connection();
+				pack.type = Connection.TYPE_COMMUNICATION;
+				this.connection.send(pack);
 				for (Map.Entry<Integer, AddressMapping> entry : Configuration.MAPPING.entrySet())
 				{
 					int listenPort = entry.getKey();

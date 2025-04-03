@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NoConnectionPendingException;
 import java.nio.channels.ReadableByteChannel;
@@ -66,6 +67,7 @@ public class ConnectionManager
 		try
 		{
 			this.receive.lock();
+			if (this.status != ConnectionManager.STAT_CLOSED) throw new AlreadyConnectedException();
 			this.reading = false;
 			this.writing = false;
 			this.status = ConnectionManager.STAT_CONNECTING;
