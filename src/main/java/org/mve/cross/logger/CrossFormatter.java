@@ -29,29 +29,38 @@ public class CrossFormatter extends Formatter
 	public String format(LogRecord record)
 	{
 		StringBuilder builder = new StringBuilder();
+
+		String clear = "\u001B[0m";
+		String color = clear;
 		if (this.type == CrossFormatter.FORMAT_TYPE_CONSOLE)
 		{
 			if (record.getLevel() == Level.SEVERE)
 			{
-				builder.append("\u001B[1m\u001B[91m");
+				color = ("\u001B[1m\u001B[91m");
 			}
 			else if (record.getLevel() == Level.WARNING)
 			{
-				builder.append("\u001B[1m\u001B[33m");
+				color = ("\u001B[1m\u001B[33m");
 			}
 			else if (record.getLevel() == Level.INFO)
 			{
-				builder.append("\u001B[0m");
+				color = ("\u001B[1m\u001B[32m");
 			}
 			else if (record.getLevel() == Level.FINE)
 			{
-				builder.append("\u001B[1m\u001B[94m");
+				color = ("\u001B[1m\u001B[94m");
+			}
+			else if (record.getLevel() == Level.CONFIG)
+			{
+				color = ("\u001B[1m\u001B[35m");
 			}
 		}
 		builder
 			.append('[')
 			.append(DATE_FORMAT.format(new Date(record.getMillis()))).append("] [")
+			.append(color)
 			.append(record.getLevel())
+			.append(clear)
 			.append("] [")
 			.append(Thread.currentThread().getName())
 			.append("]");
@@ -68,7 +77,7 @@ public class CrossFormatter extends Formatter
 			record.getThrown().printStackTrace(ps);
 			builder.append(hasMsg ? '\n' : ' ').append(writer);
 		}
-		while (builder.length() > 0 && builder.charAt(builder.length() - 1) <= 0x20)
+		while ((!builder.isEmpty()) && builder.charAt(builder.length() - 1) <= 0x20)
 		{
 			builder.deleteCharAt(builder.length() - 1);
 		}
