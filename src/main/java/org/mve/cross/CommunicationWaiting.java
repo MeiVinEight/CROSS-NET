@@ -56,7 +56,7 @@ public class CommunicationWaiting extends Synchronize
 				this.status = CommunicationWaiting.CONNECTING;
 				case CommunicationWaiting.CONNECTING:
 				InetAddress addr = InetAddress.getByName(Configuration.SERVER_ADDRESS);
-				CrossNet.LOG.info("Connection " + addr.getCanonicalHostName() + ":" + Configuration.SERVER_PORT);
+				CrossNet.LOG.info("Connection " + addr.getHostAddress() + ":" + Configuration.SERVER_PORT);
 				this.channel = SocketChannel.open();
 				this.channel.configureBlocking(false);
 				this.channel.connect(new InetSocketAddress(addr, Configuration.SERVER_PORT));
@@ -75,7 +75,6 @@ public class CommunicationWaiting extends Synchronize
 				case CommunicationWaiting.MANAGING:
 				this.connection = new ConnectionManager(this.network);
 				this.connection.blocking = false;
-				CrossNet.LOG.info("Connection creating");
 				this.connection.connect(this.channel);
 
 				this.status = CommunicationWaiting.HANDSHAKING;
@@ -94,7 +93,6 @@ public class CommunicationWaiting extends Synchronize
 				for (Map.Entry<Integer, AddressMapping> entry : Configuration.MAPPING.entrySet())
 				{
 					int listenPort = entry.getKey();
-					CrossNet.LOG.info("Communication listening on " + listenPort);
 					Listen listen = new Listen();
 					listen.ON = (short) listenPort;
 					this.connection.send(listen);

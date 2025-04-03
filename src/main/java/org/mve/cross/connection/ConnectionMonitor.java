@@ -10,7 +10,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.text.MessageFormat;
 import java.util.logging.Level;
 
 public class ConnectionMonitor implements Selection
@@ -25,7 +24,6 @@ public class ConnectionMonitor implements Selection
 		this.network = network;
 		this.server = server;
 		this.ID = server.socket().getLocalPort();
-		CrossNet.LOG.info("Communication listen " + this.ID);
 	}
 
 	public void close()

@@ -119,7 +119,7 @@ public class NetworkManager extends Synchronize
 	public ConnectionMapping mapping(int id)
 	{
 		if (id == -1) return null;
-		ConnectionMapping mapping = null;
+		ConnectionMapping mapping;
 		synchronized (this.connection)
 		{
 			if (this.connection[id] == null)

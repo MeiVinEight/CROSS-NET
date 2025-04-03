@@ -74,7 +74,6 @@ public class Connection extends Datapack
 				CrossNet.LOG.warning("Communication is in use");
 				return;
 			}
-			CrossNet.LOG.info("Connection register to communication: " + conn.address);
 			Communication com = new Communication(conn.network, conn, this.UID);
 			try
 			{
